@@ -20,7 +20,8 @@ export const metadata: Metadata = {
   description:
     "Discover premium properties — apartments, villas, plots, and commercial spaces. Your trusted real estate marketplace.",
   icons: {
-    icon: "/logo.png",
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
     apple: "/logo.png",
   },
 };
