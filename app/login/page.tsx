@@ -6,13 +6,12 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useAuth, getDashboardPath } from "@/components/AuthContext";
-import { usePropertyContext } from "@/components/PropertyContext";
 import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
     const router = useRouter();
     const { signIn, authError, clearError } = useAuth();
-    const { savedProperties, toggleSave } = usePropertyContext();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,13 +25,25 @@ export default function LoginPage() {
             const { error, role } = await signIn(email, password);
 
             if (!error) {
-                // Process pending save if exists
+                // Process pending save directly via Supabase (avoids context race condition)
                 const pendingSave = localStorage.getItem("pendingSaveProperty");
                 if (pendingSave) {
-                    if (!savedProperties.includes(pendingSave)) {
-                        toggleSave(pendingSave);
+                    try {
+                        const supabase = createClient();
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if (user) {
+                            await supabase
+                                .from("saved_properties")
+                                .upsert(
+                                    { user_id: user.id, property_id: pendingSave },
+                                    { onConflict: "user_id,property_id", ignoreDuplicates: true }
+                                );
+                        }
+                    } catch (e) {
+                        console.error("[Login] Failed to save pending property:", e);
+                    } finally {
+                        localStorage.removeItem("pendingSaveProperty");
                     }
-                    localStorage.removeItem("pendingSaveProperty");
                 }
 
                 const searchParams = new URLSearchParams(window.location.search);

@@ -16,7 +16,8 @@ import {
     BarChart,
     Briefcase,
     LogOut,
-    MapPin
+    MapPin,
+    User
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -32,6 +33,7 @@ const navItems = [
     { label: "Payments", href: "/admin/payments", icon: CreditCard },
     { label: "Analytics", href: "/admin/analytics", icon: BarChart },
     { label: "Sales CRM", href: "/admin/sales", icon: Briefcase },
+    { label: "Profile", href: "/admin/profile", icon: User },
 ];
 
 export function AdminLayout({ children }: AdminLayoutProps) {

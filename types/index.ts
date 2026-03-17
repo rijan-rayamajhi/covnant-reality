@@ -47,6 +47,7 @@ export interface Property {
     amenities?: string[] | null;
     allowChat?: boolean;
     landmark?: string | null;
+    floorPlans: string[];
 }
 
 export type PropertyStatus = "Pending Approval" | "Approved" | "Rejected";

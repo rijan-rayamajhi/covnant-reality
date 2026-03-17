@@ -20,8 +20,10 @@ import { useAuth } from "@/components/AuthContext";
 import { Search, ArrowLeft, Loader2 } from "lucide-react";
 import { recordPropertyView } from "@/lib/supabase/property-views";
 import { fetchPropertyById } from "@/lib/supabase/homepage";
+import { DescriptionSection } from "@/components/property/detail/DescriptionSection";
 import type { Property } from "@/types";
 import { AreaUnit } from "@/utils/areaConversion";
+import { useRouter } from "next/navigation";
 
 // ─── View-tracking deduplication ────────────────────────────────────────────
 const VIEW_COOLDOWN_MS = 10 * 60 * 1000;
@@ -29,7 +31,8 @@ const pendingViews = new Set<string>();
 
 export default function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = React.use(params);
-    const { user } = useAuth();
+    const { user, isLoading: authLoading } = useAuth();
+    const router = useRouter();
     const trackedRef = useRef(false);
 
     const [property, setProperty] = useState<Property | null>(null);
@@ -78,6 +81,13 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
         return () => { pendingViews.delete(id); };
     }, [id, user?.id]);
 
+    // ── Redirect if not logged in ──────────────────────────────────────────
+    useEffect(() => {
+        if (!authLoading && !user) {
+            router.push(`/login?next=/property/${id}`);
+        }
+    }, [user, authLoading, router, id]);
+
     // ── Loading ────────────────────────────────────────────────────────────
     if (loading) {
         return (
@@ -120,11 +130,12 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                 <div className="lg:grid lg:grid-cols-12 lg:gap-10 lg:pt-6">
                     {/* Left Column */}
                     <div className="lg:col-span-8 lg:bg-bg-card lg:rounded-2xl lg:overflow-hidden lg:shadow-sm">
-                        <GallerySection images={property.images} videos={property.videos} verified={property.verified} />
+                        <GallerySection images={property.images} videos={property.videos} verified={property.verified} propertyId={property.id} />
 
                         <div className="px-4 md:px-6 lg:px-8 py-4 space-y-6 md:space-y-8">
                             <PriceSection property={property} displayUnit={displayUnit} setDisplayUnit={setDisplayUnit} />
                             <OverviewSection property={property} displayUnit={displayUnit} />
+                            <DescriptionSection description={property.description} />
                             <EmiCalculatorSection price={property.price} listingType={property.listingType} />
                             <AmenitiesSection property={property} />
                             <FloorPlanSection property={property} />

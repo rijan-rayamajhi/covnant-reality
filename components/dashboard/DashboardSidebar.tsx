@@ -5,7 +5,6 @@ import {
     Search,
     CalendarDays,
     BellRing,
-    Building,
     CalendarCheck,
     UserCircle,
     LogOut,
@@ -25,7 +24,6 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
     { id: "searches", label: "Searches", icon: Search },
     { id: "visits", label: "Visits", icon: CalendarDays },
     { id: "alerts", label: "Alerts", icon: BellRing },
-    { id: "leads", label: "Leads", icon: Building },
     { id: "bookings", label: "Bookings", icon: CalendarCheck },
 ];
 

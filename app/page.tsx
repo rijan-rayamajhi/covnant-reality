@@ -11,7 +11,7 @@ import { FeaturedProjects } from "@/components/ui/FeaturedProjects";
 import { TrendingLocations } from "@/components/ui/TrendingLocations";
 import { CompareTeaser } from "@/components/ui/CompareTeaser";
 import { TrustSection } from "@/components/ui/TrustSection";
-import { TopAgents } from "@/components/ui/TopAgents";
+// import { TopAgents } from "@/components/ui/TopAgents";
 import { Testimonials } from "@/components/ui/Testimonials";
 
 
@@ -54,7 +54,7 @@ export default function HomePage() {
       <TrustSection />
 
       {/* 12. Top Agents */}
-      <TopAgents />
+      {/* <TopAgents /> */}
 
       {/* 13. Testimonials */}
       <Testimonials />

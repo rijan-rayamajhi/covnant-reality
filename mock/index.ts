@@ -23,6 +23,7 @@ export const mockProperties: Property[] = [
         verified: true,
         contactNumber: "+919876543210",
         whatsappNumber: "919876543210",
+        floorPlans: [],
     },
     {
         id: "2",
@@ -45,6 +46,7 @@ export const mockProperties: Property[] = [
         featured: true,
         contactNumber: "+919823456780",
         whatsappNumber: "919823456780",
+        floorPlans: [],
     },
     {
         id: "3",
@@ -68,6 +70,7 @@ export const mockProperties: Property[] = [
         verified: true,
         contactNumber: "+919812345670",
         whatsappNumber: "919812345670",
+        floorPlans: [],
     },
     {
         id: "4",
@@ -91,6 +94,7 @@ export const mockProperties: Property[] = [
         verified: true,
         contactNumber: "+919900123456",
         whatsappNumber: "919900123456",
+        floorPlans: [],
     },
     {
         id: "5",
@@ -114,6 +118,7 @@ export const mockProperties: Property[] = [
         verified: true,
         contactNumber: "+918877665540",
         whatsappNumber: "918877665540",
+        floorPlans: [],
     },
     {
         id: "6",
@@ -137,6 +142,7 @@ export const mockProperties: Property[] = [
         verified: true,
         contactNumber: "+918833441100",
         whatsappNumber: "918833441100",
+        floorPlans: [],
     },
 ];
 
@@ -162,6 +168,7 @@ export const mockRecommendedProperties: Property[] = [
         verified: true,
         contactNumber: "+919001122334",
         whatsappNumber: "919001122334",
+        floorPlans: [],
     },
     {
         id: "r2",
@@ -183,6 +190,7 @@ export const mockRecommendedProperties: Property[] = [
         verified: true,
         contactNumber: "+919112233445",
         whatsappNumber: "919112233445",
+        floorPlans: [],
     },
     {
         id: "r3",
@@ -205,6 +213,7 @@ export const mockRecommendedProperties: Property[] = [
         verified: true,
         contactNumber: "+919223344556",
         whatsappNumber: "919223344556",
+        floorPlans: [],
     },
     {
         id: "r4",
@@ -226,6 +235,7 @@ export const mockRecommendedProperties: Property[] = [
         verified: true,
         contactNumber: "+919334455667",
         whatsappNumber: "919334455667",
+        floorPlans: [],
     },
     {
         id: "r5",
@@ -248,6 +258,7 @@ export const mockRecommendedProperties: Property[] = [
         verified: false,
         contactNumber: "+919445566778",
         whatsappNumber: "919445566778",
+        floorPlans: [],
     },
 ];
 
@@ -273,6 +284,7 @@ export const mockRentalsProperties: Property[] = [
         verified: true,
         contactNumber: "+919556677889",
         whatsappNumber: "919556677889",
+        floorPlans: [],
     },
     {
         id: "rent2",
@@ -295,6 +307,7 @@ export const mockRentalsProperties: Property[] = [
         verified: true,
         contactNumber: "+919667788990",
         whatsappNumber: "919667788990",
+        floorPlans: [],
     },
     {
         id: "rent3",
@@ -317,6 +330,7 @@ export const mockRentalsProperties: Property[] = [
         verified: true,
         contactNumber: "+919778899001",
         whatsappNumber: "919778899001",
+        floorPlans: [],
     },
     {
         id: "rent4",
@@ -339,6 +353,7 @@ export const mockRentalsProperties: Property[] = [
         verified: true,
         contactNumber: "+919889900112",
         whatsappNumber: "919889900112",
+        floorPlans: [],
     },
     {
         id: "rent5",
@@ -361,6 +376,7 @@ export const mockRentalsProperties: Property[] = [
         verified: false,
         contactNumber: "+919990011223",
         whatsappNumber: "919990011223",
+        floorPlans: [],
     },
 ];
 

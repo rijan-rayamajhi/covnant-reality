@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { X, User, Home, Building2 } from "lucide-react";
+import { X, User, Home } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -212,7 +212,7 @@ export function AuthModal({ isOpen, onClose, initialView = "login" }: AuthModalP
                                 {[
                                     { href: "/signup", icon: <User className="w-5 h-5" />, title: "Buyer", desc: "Search and connect with sellers" },
                                     { href: "/signup", icon: <Home className="w-5 h-5" />, title: "Tenant", desc: "Find rental properties" },
-                                    { href: "/signup", icon: <Building2 className="w-5 h-5" />, title: "Agent", desc: "Manage listings and leads" },
+                                    // { href: "/signup", icon: <Building2 className="w-5 h-5" />, title: "Agent", desc: "Manage listings and leads" },
                                 ].map((role) => (
                                     <Link
                                         key={role.title}

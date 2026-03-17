@@ -6,78 +6,16 @@ import { useRouter } from "next/navigation";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { cn } from "@/lib/utils";
-import { User, Home, Building2, HardHat } from "lucide-react";
 import { useAuth, UserRole, getDashboardPath } from "@/components/AuthContext";
-import { usePropertyContext } from "@/components/PropertyContext";
+import { createClient } from "@/lib/supabase/client";
 
-type Role = "buyer" | "tenant" | "agent" | "builder" | "owner";
 
-interface RoleCardProps {
-    id: Role;
-    title: string;
-    description: string;
-    icon: React.ReactNode;
-    selected: boolean;
-    onClick: () => void;
-}
-
-function RoleCard({ title, description, icon, selected, onClick }: RoleCardProps) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className={cn(
-                "w-full flex items-start p-4 rounded-xl border-2 text-left transition-all duration-200",
-                selected
-                    ? "border-primary bg-primary-light/30"
-                    : "border-border bg-white hover:border-primary/50 hover:bg-slate-50"
-            )}
-        >
-            <div
-                className={cn(
-                    "flex items-center justify-center w-10 h-10 rounded-lg shrink-0 mr-4 transition-colors",
-                    selected ? "bg-primary text-white" : "bg-slate-100 text-text-secondary"
-                )}
-            >
-                {icon}
-            </div>
-            <div className="flex-1">
-                <h3
-                    className={cn(
-                        "text-sm font-semibold transition-colors",
-                        selected ? "text-primary" : "text-text-primary"
-                    )}
-                >
-                    {title}
-                </h3>
-                <p className="text-xs text-text-secondary mt-1">
-                    {description}
-                </p>
-            </div>
-            {/* Radio / Selection Indicator */}
-            <div
-                className={cn(
-                    "flex flex-col items-center justify-center w-5 h-5 rounded-full border-2 shrink-0 transition-colors ml-2",
-                    selected
-                        ? "border-primary bg-primary"
-                        : "border-border bg-transparent"
-                )}
-            >
-                {selected && (
-                    <div className="w-2 h-2 rounded-full bg-white" />
-                )}
-            </div>
-        </button>
-    );
-}
 
 export default function SignupPage() {
     const router = useRouter();
     const { signUp, authError, clearError } = useAuth();
-    const { savedProperties, toggleSave } = usePropertyContext();
-    const [step, setStep] = useState<1 | 2>(1);
-    const [selectedRole, setSelectedRole] = useState<UserRole>(null);
+    const [step] = useState<1 | 2>(2);
+    const [selectedRole] = useState<UserRole>("buyer");
     const [showPassword, setShowPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -93,7 +31,7 @@ export default function SignupPage() {
     const [passwordError, setPasswordError] = useState("");
 
     // Dynamic checks
-    const isProRole = selectedRole === "agent" || selectedRole === "builder" || selectedRole === "owner";
+    const isProRole = selectedRole === "builder" || selectedRole === "owner";
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -122,13 +60,25 @@ export default function SignupPage() {
             });
 
             if (!error) {
-                // Process pending save if exists
+                // Process pending save directly via Supabase (avoids context race condition)
                 const pendingSave = localStorage.getItem("pendingSaveProperty");
                 if (pendingSave) {
-                    if (!savedProperties.includes(pendingSave)) {
-                        toggleSave(pendingSave);
+                    try {
+                        const supabase = createClient();
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if (user) {
+                            await supabase
+                                .from("saved_properties")
+                                .upsert(
+                                    { user_id: user.id, property_id: pendingSave },
+                                    { onConflict: "user_id,property_id", ignoreDuplicates: true }
+                                );
+                        }
+                    } catch (e) {
+                        console.error("[Signup] Failed to save pending property:", e);
+                    } finally {
+                        localStorage.removeItem("pendingSaveProperty");
                     }
-                    localStorage.removeItem("pendingSaveProperty");
                 }
 
                 const searchParams = new URLSearchParams(window.location.search);
@@ -156,19 +106,19 @@ export default function SignupPage() {
         <AuthLayout>
             <section className="flex flex-col gap-6 w-full">
                 {/* Step Indicator */}
-                <div className="text-center">
+                {/* <div className="text-center">
                     <span className="text-xs font-semibold uppercase tracking-widest text-primary">
                         Step {step} of 2
                     </span>
-                </div>
+                </div> */}
 
                 {/* Progress Bar */}
-                <div className="w-full bg-slate-100 rounded-full h-1.5">
+                {/* <div className="w-full bg-slate-100 rounded-full h-1.5">
                     <div
                         className="h-1.5 bg-primary rounded-full transition-all duration-300 ease-in-out"
                         style={{ width: `${(step / 2) * 100}%` }}
                     />
-                </div>
+                </div> */}
 
                 {/* Header */}
                 <div className="text-center">
@@ -194,7 +144,7 @@ export default function SignupPage() {
                 )}
 
                 {/* ── Step 1: Role Selection ── */}
-                {step === 1 && (
+                {/* {step === 1 && (
                     <>
                         <div className="flex flex-col gap-3 mt-2">
                             <RoleCard
@@ -212,14 +162,6 @@ export default function SignupPage() {
                                 icon={<Home className="w-5 h-5" />}
                                 selected={selectedRole === "tenant"}
                                 onClick={() => setSelectedRole("tenant")}
-                            />
-                            <RoleCard
-                                id="agent"
-                                title="Agent"
-                                description="Manage listings and leads"
-                                icon={<Building2 className="w-5 h-5" />}
-                                selected={selectedRole === "agent"}
-                                onClick={() => setSelectedRole("agent")}
                             />
                             <RoleCard
                                 id="builder"
@@ -261,7 +203,7 @@ export default function SignupPage() {
                             </p>
                         </div>
                     </>
-                )}
+                )} */}
 
                 {/* ── Step 2: Details Form ── */}
                 {step === 2 && (
@@ -363,35 +305,30 @@ export default function SignupPage() {
                             />
                         </div>
 
-                        {/* Actions Row */}
-                        <div className="flex items-center gap-3 mt-4">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="w-1/3 h-12"
-                                onClick={() => {
-                                    clearError();
-                                    setPasswordError("");
-                                    setStep(1);
-                                }}
+                        <Button
+                            type="submit"
+                            className="w-full h-12 mt-4"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? (
+                                <span className="flex items-center gap-2">
+                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Creating account...
+                                </span>
+                            ) : (
+                                "Create Account"
+                            )}
+                        </Button>
+
+                        <p className="text-sm text-text-secondary text-center mt-4">
+                            Already have an account?{" "}
+                            <Link
+                                href="/login"
+                                className="font-medium text-primary hover:text-primary-hover transition-colors"
                             >
-                                Back
-                            </Button>
-                            <Button
-                                type="submit"
-                                className="flex-1 h-12"
-                                disabled={isSubmitting}
-                            >
-                                {isSubmitting ? (
-                                    <span className="flex items-center gap-2">
-                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        Creating account...
-                                    </span>
-                                ) : (
-                                    "Create Account"
-                                )}
-                            </Button>
-                        </div>
+                                Log in
+                            </Link>
+                        </p>
                     </form>
                 )}
             </section>

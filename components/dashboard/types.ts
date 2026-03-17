@@ -5,7 +5,6 @@ export type DashboardTabId =
     | "searches"
     | "visits"
     | "alerts"
-    | "leads"
     | "bookings"
     | "profile";
 

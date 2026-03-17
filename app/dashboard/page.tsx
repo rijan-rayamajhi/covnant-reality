@@ -9,7 +9,6 @@ import {
     SearchesSection,
     VisitsSection,
     AlertsSection,
-    LeadsSection,
     BookingsSection,
     ProfileSection,
     DashboardSkeleton,
@@ -18,7 +17,6 @@ import {
     fetchSavedProperties,
     fetchSavedSearches,
     fetchSiteVisits,
-    fetchLeads,
     fetchAlerts,
     fetchProfile,
 } from "@/lib/supabase/dashboard";
@@ -27,12 +25,11 @@ import type {
     SavedPropertyRow,
     SavedSearch,
     SiteVisitRow,
-    LeadRow,
     AlertRow,
     UserProfile,
 } from "@/components/dashboard/types";
 
-const VALID_TABS: DashboardTabId[] = ["saved", "searches", "visits", "alerts", "leads", "bookings", "profile"];
+const VALID_TABS: DashboardTabId[] = ["saved", "searches", "visits", "alerts", "bookings", "profile"];
 
 function getTabFromParam(param: string | null): DashboardTabId {
     return VALID_TABS.includes(param as DashboardTabId) ? (param as DashboardTabId) : "saved";
@@ -50,7 +47,6 @@ function DashboardContent() {
     const [savedProperties, setSavedProperties] = useState<SavedPropertyRow[]>([]);
     const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
     const [siteVisits, setSiteVisits] = useState<SiteVisitRow[]>([]);
-    const [leads, setLeads] = useState<LeadRow[]>([]);
     const [alerts, setAlerts] = useState<AlertRow[]>([]);
     const [profile, setProfile] = useState<UserProfile | null>(null);
 
@@ -60,7 +56,6 @@ function DashboardContent() {
         searches: true,
         visits: true,
         alerts: true,
-        leads: true,
         bookings: true,
         profile: true,
     });
@@ -99,11 +94,6 @@ function DashboardContent() {
                 case "visits": {
                     const data = await fetchSiteVisits();
                     setSiteVisits(data);
-                    break;
-                }
-                case "leads": {
-                    const data = await fetchLeads();
-                    setLeads(data);
                     break;
                 }
                 case "alerts": {
@@ -171,9 +161,6 @@ function DashboardContent() {
                     )}
                     {activeTab === "alerts" && (
                         <AlertsSection alerts={alerts} loading={loading.alerts} />
-                    )}
-                    {activeTab === "leads" && (
-                        <LeadsSection leads={leads} loading={loading.leads} />
                     )}
                     {activeTab === "bookings" && (
                         <BookingsSection bookings={upcomingBookings} loading={loading.bookings} />

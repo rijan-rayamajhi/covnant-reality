@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MoreVertical, Check, X, MapPin, Loader2, Trash2 } from "lucide-react";
+import { MoreVertical, Check, X, MapPin, Loader2, Trash2, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AdminProperty } from "@/lib/supabase/admin";
 
@@ -10,6 +10,7 @@ interface AdminPropertyTableProps {
     onApprove: (id: string) => void;
     onReject: (id: string) => void;
     onDelete?: (id: string) => void;
+    onViewDetails?: (property: AdminProperty) => void;
     actionLoading: string | null;
 }
 
@@ -77,6 +78,7 @@ export function AdminPropertyTable({
     onApprove,
     onReject,
     onDelete,
+    onViewDetails,
     actionLoading,
 }: AdminPropertyTableProps) {
     const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
@@ -106,7 +108,12 @@ export function AdminPropertyTable({
                     properties.map((property) => (
                         <div key={property.id} className="p-4 flex flex-col gap-4 hover:bg-slate-50/50 transition-colors">
                             <div className="flex flex-col gap-1">
-                                <span className="font-semibold text-text-primary text-sm line-clamp-1">{property.title}</span>
+                                <button
+                                    onClick={() => onViewDetails?.(property)}
+                                    className="font-semibold text-text-primary text-sm line-clamp-1 text-left hover:text-primary transition-colors"
+                                >
+                                    {property.title}
+                                </button>
                                 <div className="flex items-center text-text-muted text-xs">
                                     <MapPin className="w-3.5 h-3.5 mr-1 shrink-0" />
                                     <span className="truncate">{property.address}, {property.city}</span>
@@ -204,9 +211,13 @@ export function AdminPropertyTable({
                                 <tr key={property.id} className="hover:bg-slate-50/50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col min-w-0 py-0.5">
-                                            <span className="font-semibold text-text-primary text-sm line-clamp-1" title={property.title}>
+                                            <button
+                                                onClick={() => onViewDetails?.(property)}
+                                                className="font-semibold text-text-primary text-sm line-clamp-1 text-left hover:text-primary transition-colors"
+                                                title={property.title}
+                                            >
                                                 {property.title}
-                                            </span>
+                                            </button>
                                             <div className="flex items-center text-text-muted text-xs mt-1">
                                                 <MapPin className="w-3.5 h-3.5 mr-1 shrink-0" />
                                                 <span className="truncate">{property.address}, {property.city}</span>
@@ -264,6 +275,13 @@ export function AdminPropertyTable({
                                                         />
                                                         <div className="absolute right-0 z-20 mt-1 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none overflow-hidden text-left">
                                                             <div className="py-1">
+                                                                <button
+                                                                    onClick={() => { setOpenDropdownId(null); onViewDetails?.(property); }}
+                                                                    className="flex items-center w-full px-4 py-2.5 text-sm text-text-primary hover:bg-slate-50 font-medium"
+                                                                >
+                                                                    <ExternalLink className="mr-2 h-4 w-4 text-primary" />
+                                                                    View Details
+                                                                </button>
                                                                 {(property.status === "pending" || property.status === "rejected") && (
                                                                     <button
                                                                         onClick={() => handleAction(property.id, "approve")}

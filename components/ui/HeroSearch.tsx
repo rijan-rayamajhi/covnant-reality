@@ -234,7 +234,7 @@ function CategoryDropdown({
 
 export function HeroSearch() {
     const router = useRouter();
-    const { userRole } = useAuth();
+    const { user, userRole } = useAuth();
     const canPostProperty = userRole !== "buyer" && userRole !== "tenant";
     const visibleTabs = useMemo(
         () => canPostProperty ? PRIMARY_TABS : PRIMARY_TABS.filter((t) => t.value !== "sell"),
@@ -284,7 +284,11 @@ export function HeroSearch() {
 
     const handleSearch = () => {
         if (activeTab === "sell") {
-            router.push("/post-property");
+            if (!user) {
+                router.push("/login?next=/post-property");
+            } else {
+                router.push("/post-property");
+            }
             return;
         }
         const params = new URLSearchParams();

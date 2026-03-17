@@ -14,9 +14,9 @@ export function Footer() {
                             <Image
                                 src="/logo.png"
                                 alt="Covnant Reality Logo"
-                                width={150}
-                                height={50}
-                                className="h-12 w-auto object-contain"
+                                width={180}
+                                height={60}
+                                className="h-14 w-auto object-contain"
                             />
                         </Link>
                         <p className="text-sm text-text-secondary leading-relaxed max-w-xs">

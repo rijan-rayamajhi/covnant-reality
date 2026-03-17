@@ -137,7 +137,7 @@ export function PostPropertyContent({ onSuccess, customSubmit, bypassRoleRedirec
     const editId = searchParams.get("edit");
     const isEditMode = !!editId;
 
-    const { userRole } = useAuth();
+    const { userRole, profile } = useAuth();
     const { submitProperty, isSubmitting: isHookSubmitting, error: submitErrorHook, reset: resetSubmitError } = useSubmitProperty();
     const [isCustomSubmitting, setIsCustomSubmitting] = useState(false);
     const isSubmitting = isHookSubmitting || isCustomSubmitting;
@@ -174,12 +174,30 @@ export function PostPropertyContent({ onSuccess, customSubmit, bypassRoleRedirec
             if (initialRole) {
                 setFormData((prev) => ({ ...prev, role: initialRole }));
                 setCurrentStep((prev) => (prev === 1 ? 2 : prev));
-            } else if (userRole === "owner") {
+            } else if (userRole === "owner" || userRole === "admin") {
                 setFormData((prev) => ({ ...prev, role: "Owner" }));
                 setCurrentStep((prev) => (prev === 1 ? 2 : prev));
             }
         }
     }, [userRole, isEditMode, initialRole]);
+
+    // ─── Auto-fill contact number from profile ───────────────────
+    useEffect(() => {
+        if (!isEditMode && profile?.phone && !formData.contactNumber) {
+            const cleanPhone = profile.phone.replace(/\D/g, "").slice(-10);
+            if (cleanPhone.length === 10) {
+                setFormData((prev) => {
+                    // Double check inside to avoid unnecessary updates if contactNumber was just set
+                    if (prev.contactNumber) return prev;
+                    return {
+                        ...prev,
+                        contactNumber: cleanPhone,
+                        whatsappNumber: prev.whatsappNumber || cleanPhone,
+                    };
+                });
+            }
+        }
+    }, [profile, isEditMode, formData.contactNumber]);
 
     // ─── Load property data when in edit mode ──────────────────────
     const loadPropertyForEdit = useCallback(async () => {
@@ -305,7 +323,7 @@ export function PostPropertyContent({ onSuccess, customSubmit, bypassRoleRedirec
                             if (onSuccess) {
                                 onSuccess();
                             } else {
-                                router.push("/dashboard");
+                                router.push(userRole === "admin" ? "/admin/properties" : "/dashboard");
                             }
                         }, 3000);
                     }
@@ -439,12 +457,12 @@ export function PostPropertyContent({ onSuccess, customSubmit, bypassRoleRedirec
                         </div>
                         <div>
                             <p className="font-semibold">
-                                {isEditMode ? "Property Updated Successfully" : "Property Submitted — Pending Approval"}
+                                {isEditMode ? "Property Updated Successfully" : (userRole === "admin" ? "Property Published Successfully" : "Property Submitted — Pending Approval")}
                             </p>
                             <p className="text-emerald-50 text-xs">
                                 {isEditMode
                                     ? "Redirecting to your listings…"
-                                    : "Our team will review your listing. Redirecting to Dashboard…"
+                                    : (userRole === "admin" ? "Your property is live! Redirecting to admin panel…" : "Our team will review your listing. Redirecting to Dashboard…")
                                 }
                             </p>
                         </div>

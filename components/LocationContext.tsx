@@ -45,10 +45,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
                     setSelectedLocation(saved);
                 } catch (e) {
                     console.error("Error parsing saved location", e);
-                    setIsLocationSelectorOpen(true);
                 }
-            } else {
-                setIsLocationSelectorOpen(true);
             }
             setHydrated(true);
         };

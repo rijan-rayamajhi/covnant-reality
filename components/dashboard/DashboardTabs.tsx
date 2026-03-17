@@ -13,7 +13,6 @@ const TABS: TabDef[] = [
     { id: "searches", label: "Searches" },
     { id: "visits", label: "Visits" },
     { id: "alerts", label: "Alerts" },
-    { id: "leads", label: "Leads" },
     { id: "bookings", label: "Bookings" },
     { id: "profile", label: "Profile" },
 ];

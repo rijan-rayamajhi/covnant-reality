@@ -2,15 +2,19 @@
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import { useRouter, usePathname } from "next/navigation";
 import { BadgeCheck, Heart } from "lucide-react";
+import { usePropertyContext } from "@/components/PropertyContext";
+import { useAuth } from "@/components/AuthContext";
 
 interface GallerySectionProps {
     images: string[];
     videos?: string[];
     verified?: boolean;
+    propertyId?: string;
 }
 
-export function GallerySection({ images, videos = [], verified }: GallerySectionProps) {
+export function GallerySection({ images, videos = [], verified, propertyId }: GallerySectionProps) {
     const allMedia = [
         ...images.map(src => ({ src, type: 'image' as const })),
         ...videos.map(src => ({ src, type: 'video' as const }))
@@ -21,8 +25,14 @@ export function GallerySection({ images, videos = [], verified }: GallerySection
         : [{ src: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800", type: 'image' as const }];
 
     const [activeIndex, setActiveIndex] = useState(0);
-    const [isSaved, setIsSaved] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    // ── Wishlist wired to Supabase via PropertyContext ───────────────────────
+    const { savedProperties, toggleSave } = usePropertyContext();
+    const { userRole } = useAuth();
+    const router = useRouter();
+    const pathname = usePathname();
+    const isSaved = propertyId ? savedProperties.includes(propertyId) : false;
 
     useEffect(() => {
         const container = scrollContainerRef.current;
@@ -93,12 +103,21 @@ export function GallerySection({ images, videos = [], verified }: GallerySection
 
             {/* Top Right: Save Icon */}
             <button
-                onClick={() => setIsSaved(!isSaved)}
+                onClick={() => {
+                    if (!propertyId) return;
+                    if (!userRole) {
+                        localStorage.setItem("pendingSaveProperty", propertyId);
+                        router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+                    } else {
+                        toggleSave(propertyId);
+                    }
+                }}
                 className="absolute top-4 right-4 z-10 p-2.5 bg-white/90 backdrop-blur-sm shadow-sm rounded-full transition-colors active:scale-95"
                 aria-label={isSaved ? "Unsave property" : "Save property"}
             >
                 <Heart
                     className={`w-5 h-5 transition-colors ${isSaved ? "fill-danger text-danger" : "text-text-secondary"}`}
+                    fill={isSaved ? "currentColor" : "none"}
                 />
             </button>
 

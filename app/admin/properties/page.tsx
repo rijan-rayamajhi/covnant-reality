@@ -13,6 +13,7 @@ import {
     deleteAdminProperty,
     type AdminProperty,
 } from "@/lib/supabase/admin";
+import { PropertyDetailModal } from "@/components/admin/PropertyDetailModal";
 
 type TabType = "all" | "pending" | "approved" | "rejected";
 
@@ -26,6 +27,8 @@ export default function PropertyModerationPage() {
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [selectedProperty, setSelectedProperty] = useState<AdminProperty | null>(null);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
     const tabs = [
         { id: "all", label: "All Properties" },
@@ -115,6 +118,11 @@ export default function PropertyModerationPage() {
         await fetchData(page);
     };
 
+    const handleViewDetails = (property: AdminProperty) => {
+        setSelectedProperty(property);
+        setIsDetailModalOpen(true);
+    };
+
     const filteredProperties = properties.filter((property) => {
         if (activeTab === "all") return true;
         if (activeTab === "pending" && property.status === "pending") return true;
@@ -143,10 +151,10 @@ export default function PropertyModerationPage() {
                         Refresh
                     </button>
                     <Link
-                        href="/admin/properties/create"
+                        href="/post-property"
                         className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors"
                     >
-                        Add Property For User
+                        Post Property
                     </Link>
                 </div>
             </div>
@@ -203,6 +211,7 @@ export default function PropertyModerationPage() {
                         onApprove={handleApprove}
                         onReject={handleReject}
                         onDelete={handleDelete}
+                        onViewDetails={handleViewDetails}
                         actionLoading={actionLoading}
                     />
                     <AdminPagination
@@ -214,6 +223,12 @@ export default function PropertyModerationPage() {
                     />
                 </>
             )}
+
+            <PropertyDetailModal
+                isOpen={isDetailModalOpen}
+                onClose={() => setIsDetailModalOpen(false)}
+                property={selectedProperty}
+            />
         </div>
     );
 }

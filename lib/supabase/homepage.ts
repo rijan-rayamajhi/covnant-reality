@@ -23,6 +23,9 @@ function mapRowToProperty(row: any): Property {
     const videoUrls = media
         .filter((m) => m.media_type === "video")
         .map((m) => getPublicUrl(m.media_url));
+    const floorPlanUrls = media
+        .filter((m) => m.media_type === "floorplan")
+        .map((m) => getPublicUrl(m.media_url));
     const primaryImage = imageUrls[0] || "/placeholder-property.jpg";
 
     return {
@@ -63,6 +66,7 @@ function mapRowToProperty(row: any): Property {
         amenities: row.amenities ?? [],
         allowChat: row.allow_chat ?? true,
         landmark: row.landmark ?? null,
+        floorPlans: floorPlanUrls,
     };
 }
 
