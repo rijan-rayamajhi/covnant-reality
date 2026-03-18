@@ -21,23 +21,7 @@ const PROTECTED_ROUTES: Record<string, UserRole[]> = {
 /** Routes that authenticated users should NOT visit (redirect to their dashboard). */
 const AUTH_PAGES = ["/login", "/signup", "/forgot-password"];
 
-/** Map a role to its dashboard path. */
-function getDashboardPath(role: UserRole | null): string {
-    switch (role) {
-        case "agent":
-            return "/agent";
-        case "builder":
-            return "/builder";
-        case "admin":
-            return "/admin";
-        case "owner":
-            return "/owner";
-        case "buyer":
-        case "tenant":
-        default:
-            return "/dashboard";
-    }
-}
+
 
 /* ── Middleware ─────────────────────────────────────────────────── */
 
@@ -47,10 +31,10 @@ export async function middleware(request: NextRequest) {
 
     const role = (user?.user_metadata?.role as UserRole) ?? null;
 
-    /* ─── 1. Authenticated user visiting an auth page → redirect to dashboard ── */
+    /* ─── 1. Authenticated user visiting an auth page → redirect to home ── */
     if (user && AUTH_PAGES.some((p) => pathname.startsWith(p))) {
         const dashboardUrl = request.nextUrl.clone();
-        dashboardUrl.pathname = getDashboardPath(role);
+        dashboardUrl.pathname = '/';
         return NextResponse.redirect(dashboardUrl);
     }
 

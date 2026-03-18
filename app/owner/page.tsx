@@ -9,6 +9,7 @@ import { OwnerPropertiesView } from "@/components/owner/OwnerPropertiesView";
 import { OwnerAddPropertyView } from "@/components/owner/OwnerAddPropertyView";
 import { OwnerLeadsView } from "@/components/owner/OwnerLeadsView";
 import { OwnerVisitsView } from "@/components/owner/OwnerVisitsView";
+import { OwnerFloorPlanRequestsView } from "@/components/owner/OwnerFloorPlanRequestsView";
 import { OwnerProfileView } from "@/components/owner/OwnerProfileView";
 
 
@@ -31,6 +32,7 @@ export default function OwnerPage() {
                             {activeTab === "add-property" && "List a new property on the market."}
                             {activeTab === "leads" && "View leads generated from your listings."}
                             {activeTab === "visits" && "Manage site visits requested by buyers."}
+                            {activeTab === "floor-plan-requests" && "Manage floor plan access requests from potential buyers."}
                             {activeTab === "profile" && "Update your personal and company details."}
                         </p>
                     </header>
@@ -42,6 +44,7 @@ export default function OwnerPage() {
                         {activeTab === "add-property" && <OwnerAddPropertyView onSuccess={() => setActiveTab("properties")} />}
                         {activeTab === "leads" && <OwnerLeadsView />}
                         {activeTab === "visits" && <OwnerVisitsView />}
+                        {activeTab === "floor-plan-requests" && <OwnerFloorPlanRequestsView />}
                         {activeTab === "profile" && <OwnerProfileView />}
                     </div>
                 </div>

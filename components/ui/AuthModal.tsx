@@ -7,7 +7,7 @@ import { X, User, Home } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { useAuth, getDashboardPath } from "@/components/AuthContext";
+import { useAuth } from "@/components/AuthContext";
 
 type ViewState = "login" | "signup";
 
@@ -72,12 +72,12 @@ export function AuthModal({ isOpen, onClose, initialView = "login" }: AuthModalP
         setIsSubmitting(true);
 
         try {
-            const { error, role } = await signIn(email, password);
+            const { error } = await signIn(email, password);
 
             setIsSubmitting(false);
             if (!error) {
                 onClose();
-                router.push(getDashboardPath(role));
+                router.push('/');
             }
         } catch (err) {
             console.error("Login error:", err);

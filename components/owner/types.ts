@@ -4,4 +4,5 @@ export type OwnerDashboardTabId =
     | "add-property"
     | "leads"
     | "visits"
+    | "floor-plan-requests"
     | "profile";

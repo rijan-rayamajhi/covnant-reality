@@ -8,6 +8,7 @@ import {
     CalendarDays,
     UserCircle,
     LogOut,
+    FileKey,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/AuthContext";
@@ -25,6 +26,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
     { id: "add-property", label: "Add Property", icon: PlusCircle },
     { id: "leads", label: "Leads", icon: Users },
     { id: "visits", label: "Site Visits", icon: CalendarDays },
+    { id: "floor-plan-requests", label: "Floor Plan Requests", icon: FileKey },
 ];
 
 interface OwnerSidebarProps {

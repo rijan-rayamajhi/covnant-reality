@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { useAuth, getDashboardPath } from "@/components/AuthContext";
+import { useAuth } from "@/components/AuthContext";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -22,7 +22,7 @@ export default function LoginPage() {
         setIsSubmitting(true);
 
         try {
-            const { error, role } = await signIn(email, password);
+            const { error } = await signIn(email, password);
 
             if (!error) {
                 // Process pending save directly via Supabase (avoids context race condition)
@@ -52,7 +52,7 @@ export default function LoginPage() {
                 if (redirectPath && redirectPath.startsWith('/')) {
                     router.push(redirectPath);
                 } else {
-                    router.push(getDashboardPath(role));
+                    router.push('/');
                 }
             }
         } catch (err) {

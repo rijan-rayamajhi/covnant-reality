@@ -4,6 +4,17 @@ import { useEffect, useState, useCallback } from "react";
 import { BarChart3, TrendingUp, Users, MapPin, AlertCircle, RefreshCcw, Building2, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchAdminAnalytics, type AdminAnalytics } from "@/lib/supabase/admin";
+import {
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    BarChart,
+    Bar,
+} from "recharts";
 
 export default function AnalyticsPage() {
     const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
@@ -62,7 +73,6 @@ export default function AnalyticsPage() {
 
             {loading ? (
                 <div className="space-y-6">
-                    {/* Skeleton for stat cards */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         {Array.from({ length: 4 }).map((_, i) => (
                             <div key={i} className="bg-white border border-border rounded-xl p-5 shadow-sm animate-pulse">
@@ -72,8 +82,6 @@ export default function AnalyticsPage() {
                             </div>
                         ))}
                     </div>
-                    {/* Skeleton for cities */}
-                    <div className="bg-white border border-border rounded-xl p-5 shadow-sm animate-pulse h-[200px]" />
                 </div>
             ) : analytics ? (
                 <>
@@ -98,7 +106,6 @@ export default function AnalyticsPage() {
 
                     {/* Additional metrics row */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Pending vs Active */}
                         <div className="bg-white border border-border rounded-xl p-5 shadow-sm">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="font-semibold text-text-primary">Pending Approvals</h3>
@@ -112,7 +119,6 @@ export default function AnalyticsPage() {
                             </div>
                         </div>
 
-                        {/* Top Performing Cities */}
                         <div className="md:col-span-2 bg-white border border-border rounded-xl p-5 shadow-sm">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="font-semibold text-text-primary">Top Performing Cities</h3>
@@ -136,30 +142,91 @@ export default function AnalyticsPage() {
                         </div>
                     </div>
 
-                    {/* Chart placeholders */}
+                    {/* Real Charts */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div className="bg-white border border-border rounded-xl p-5 shadow-sm min-h-[300px] flex flex-col">
+                        <div className="bg-white border border-border rounded-xl p-5 shadow-sm min-h-[400px] flex flex-col">
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="font-semibold text-text-primary">Platform Traffic</h3>
-                                <div className="p-2 bg-slate-50 text-slate-500 rounded-lg">
+                                <h3 className="font-semibold text-text-primary">Platform Traffic (New Users)</h3>
+                                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
                                     <Users className="w-4 h-4" />
                                 </div>
                             </div>
-                            <div className="flex-1 w-full bg-slate-50 border border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center text-text-muted transition-colors hover:bg-slate-100/50">
-                                <BarChart3 className="w-8 h-8 mb-3 text-slate-300" />
-                                <span className="text-sm font-medium">Traffic Chart Area</span>
-                                <span className="text-xs mt-1">Data visualization component will render here</span>
+                            <div className="flex-1 w-full min-h-[300px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={analytics.trafficTrend}>
+                                        <defs>
+                                            <linearGradient id="colorTraffic" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#2563eb" stopOpacity={0.1}/>
+                                                <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                        <XAxis 
+                                            dataKey="name" 
+                                            axisLine={false} 
+                                            tickLine={false} 
+                                            tick={{ fill: '#64748b', fontSize: 12 }}
+                                            dy={10}
+                                        />
+                                        <YAxis 
+                                            axisLine={false} 
+                                            tickLine={false} 
+                                            tick={{ fill: '#64748b', fontSize: 12 }}
+                                        />
+                                        <Tooltip 
+                                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                            cursor={{ stroke: '#2563eb', strokeWidth: 2 }}
+                                        />
+                                        <Area 
+                                            type="monotone" 
+                                            dataKey="value" 
+                                            stroke="#2563eb" 
+                                            strokeWidth={3}
+                                            fillOpacity={1} 
+                                            fill="url(#colorTraffic)" 
+                                            animationDuration={1500}
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
 
-                        <div className="bg-white border border-border rounded-xl p-5 shadow-sm min-h-[300px] flex flex-col">
+                        <div className="bg-white border border-border rounded-xl p-5 shadow-sm min-h-[400px] flex flex-col">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="font-semibold text-text-primary">Leads Trend</h3>
+                                <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                                    <TrendingUp className="w-4 h-4" />
+                                </div>
                             </div>
-                            <div className="flex-1 w-full bg-slate-50 border border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center text-text-muted transition-colors hover:bg-slate-100/50">
-                                <TrendingUp className="w-8 h-8 mb-3 text-slate-300" />
-                                <span className="text-sm font-medium">Leads Chart Area</span>
-                                <span className="text-xs mt-1">Data visualization component will render here</span>
+                            <div className="flex-1 w-full min-h-[300px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={analytics.leadsTrend}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                        <XAxis 
+                                            dataKey="name" 
+                                            axisLine={false} 
+                                            tickLine={false} 
+                                            tick={{ fill: '#64748b', fontSize: 12 }}
+                                            dy={10}
+                                        />
+                                        <YAxis 
+                                            axisLine={false} 
+                                            tickLine={false} 
+                                            tick={{ fill: '#64748b', fontSize: 12 }}
+                                        />
+                                        <Tooltip 
+                                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                            cursor={{ fill: '#f1f5f9' }}
+                                        />
+                                        <Bar 
+                                            dataKey="value" 
+                                            fill="#9333ea" 
+                                            radius={[4, 4, 0, 0]} 
+                                            barSize={32}
+                                            animationDuration={1500}
+                                        />
+                                    </BarChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
                     </div>

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { useAuth, UserRole, getDashboardPath } from "@/components/AuthContext";
+import { useAuth, UserRole } from "@/components/AuthContext";
 import { createClient } from "@/lib/supabase/client";
 
 
@@ -51,7 +51,7 @@ export default function SignupPage() {
         setIsSubmitting(true);
 
         try {
-            const { error, role } = await signUp(email, password, {
+            const { error } = await signUp(email, password, {
                 full_name: fullName,
                 phone,
                 role: selectedRole as string,
@@ -87,7 +87,7 @@ export default function SignupPage() {
                 if (redirectPath && redirectPath.startsWith('/')) {
                     router.push(redirectPath);
                 } else {
-                    router.push(getDashboardPath(role ?? selectedRole));
+                    router.push('/');
                 }
             }
         } catch (err) {

@@ -61,6 +61,8 @@ export interface AdminAnalytics {
     totalLeads: number;
     pendingApprovals: number;
     propertiesByCity: { city: string; count: number }[];
+    trafficTrend: { name: string; value: number }[];
+    leadsTrend: { name: string; value: number }[];
 }
 
 export interface AdminActivityLog {

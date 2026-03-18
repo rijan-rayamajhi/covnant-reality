@@ -20,7 +20,7 @@ type TabType = "all" | "pending" | "approved" | "rejected";
 const PAGE_SIZE = 20;
 
 export default function PropertyModerationPage() {
-    const [activeTab, setActiveTab] = useState<TabType>("pending");
+    const [activeTab, setActiveTab] = useState<TabType>("all");
     const [properties, setProperties] = useState<AdminProperty[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [page, setPage] = useState(0);
