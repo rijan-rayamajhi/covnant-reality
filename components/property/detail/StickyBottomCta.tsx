@@ -4,12 +4,13 @@ import { useState } from "react";
 import { Phone, MessageCircle, CalendarDays } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { LeadModal, type LeadActionType } from "@/components/ui/LeadModal";
+import type { Property } from "@/types";
 
 interface StickyBottomCtaProps {
-    propertyId: string;
+    property: Property;
 }
 
-export function StickyBottomCta({ propertyId }: StickyBottomCtaProps) {
+export function StickyBottomCta({ property }: StickyBottomCtaProps) {
     const router = useRouter();
     const [modalState, setModalState] = useState<{
         isOpen: boolean;
@@ -21,15 +22,25 @@ export function StickyBottomCta({ propertyId }: StickyBottomCtaProps) {
         setModalState({ isOpen: true, actionType, onSuccess });
     };
 
-    // Suppress unused warning — propertyId will be used when lead creation is wired
-    void propertyId;
+    const handleWhatsApp = () => {
+        const waNumber = property.whatsappNumber || "911234567890";
+        const url = window.location.href;
+        const message = `Hi, I am interested in this property: ${property.title} (${url})`;
+        const encodedMessage = encodeURIComponent(message);
+        window.open(`https://wa.me/${waNumber}?text=${encodedMessage}`, "_blank");
+    };
+
+    const handleCall = () => {
+        const dialNumber = property.contactNumber || "1234567890";
+        window.location.href = `tel:${dialNumber}`;
+    };
 
     return (
         <>
             <div className="fixed bottom-0 left-0 right-0 max-w-screen-sm md:max-w-3xl mx-auto bg-bg-card border-t border-border p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-50 shadow-[0_-4px_10px_-4px_rgba(0,0,0,0.05)] lg:hidden">
                 <div className="grid grid-cols-4 gap-2">
                     <button
-                        onClick={() => openModal("Call", () => { window.location.href = "tel:1234567890"; })}
+                        onClick={handleCall}
                         className="flex flex-col items-center justify-center py-2.5 px-1 bg-bg-card border border-border text-text-primary rounded-xl hover:bg-slate-50 active:scale-95 transition-all"
                     >
                         <Phone className="w-5 h-5 mb-1" />
@@ -37,7 +48,7 @@ export function StickyBottomCta({ propertyId }: StickyBottomCtaProps) {
                     </button>
 
                     <button
-                        onClick={() => openModal("WhatsApp", () => { window.open("https://wa.me/911234567890", "_blank"); })}
+                        onClick={handleWhatsApp}
                         className="flex flex-col items-center justify-center py-2.5 px-1 bg-[#25D366] text-white rounded-xl hover:bg-[#20BE5C] active:scale-95 transition-all shadow-sm"
                     >
                         <MessageCircle className="w-5 h-5 mb-1" />

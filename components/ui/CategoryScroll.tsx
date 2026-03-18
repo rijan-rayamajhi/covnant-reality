@@ -1,50 +1,90 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { fetchCategoryCounts } from "@/lib/supabase/homepage";
+import { useCity } from "@/components/CityContext";
 
 interface Category {
     id: string;
     label: string;
+    type: string;
     count: string;
     image: string;
 }
 
-const categories: Category[] = [
+const initialCategories: Category[] = [
     {
         id: "cat-1",
         label: "Apartments",
-        count: "4,500+",
+        type: "apartment",
+        count: "...",
         image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=800&auto=format&fit=crop",
     },
     {
         id: "cat-2",
         label: "Villas",
-        count: "850+",
+        type: "villa",
+        count: "...",
         image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800&auto=format&fit=crop",
     },
     {
         id: "cat-3",
         label: "Plots",
-        count: "1,200+",
+        type: "plot",
+        count: "...",
         image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800&auto=format&fit=crop",
     },
     {
         id: "cat-4",
         label: "Commercial",
-        count: "320+",
+        type: "commercial",
+        count: "...",
         image: "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=800&auto=format&fit=crop",
     },
     {
         id: "cat-5",
         label: "PG / Co-living",
-        count: "950+",
+        type: "pg",
+        count: "...",
         image: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=800&auto=format&fit=crop",
     },
 ];
 
 export function CategoryScroll() {
+    const { selectedCity } = useCity();
+    const [categories, setCategories] = useState(initialCategories);
+
+    useEffect(() => {
+        let isMounted = true;
+        fetchCategoryCounts(selectedCity || undefined)
+            .then((counts) => {
+                if (isMounted) {
+                    setCategories((prev) =>
+                        prev.map((cat) => {
+                            const baseCount = counts[cat.type] || 0;
+                            let displayCount = baseCount;
+                            // Merge house count into apartments for UI
+                            if (cat.type === "apartment") {
+                                displayCount += (counts["house"] || 0);
+                            }
+                            return {
+                                ...cat,
+                                count: displayCount.toLocaleString(),
+                            };
+                        })
+                    );
+                }
+            })
+            .catch((err) => console.error("[CategoryScroll] count error:", err));
+
+        return () => {
+            isMounted = false;
+        };
+    }, [selectedCity]);
+
     return (
         <section className="py-12 lg:py-20 bg-white">
             <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex items-center justify-between mb-6">
@@ -69,7 +109,7 @@ export function CategoryScroll() {
                 {categories.map((cat) => (
                     <Link
                         key={cat.id}
-                        href={`/search?category=${encodeURIComponent(cat.label)}`}
+                        href={`/search?category=${encodeURIComponent(cat.type)}`}
                         className={cn(
                             "group relative overflow-hidden rounded-2xl cursor-pointer",
                             "min-w-[45%] sm:min-w-[30%] lg:min-w-0 snap-center first:pl-4 last:pr-4 lg:first:pl-0 lg:last:pr-0",
@@ -79,7 +119,6 @@ export function CategoryScroll() {
                     >
                         {/* Background Image */}
                         <div className="absolute inset-x-0 inset-y-0 w-full h-full">
-                            {/* We wrap Image in a div to avoid first/last padding affecting Image width directly */}
                             <Image
                                 src={cat.image}
                                 alt={cat.label}
@@ -97,7 +136,7 @@ export function CategoryScroll() {
                                 {cat.label}
                             </h3>
                             <p className="text-xs sm:text-sm text-white/90 mt-0.5 font-medium drop-shadow-md">
-                                {cat.count} Properties
+                                {cat.count} {cat.count === "1" ? "Property" : "Properties"}
                             </p>
                         </div>
                     </Link>

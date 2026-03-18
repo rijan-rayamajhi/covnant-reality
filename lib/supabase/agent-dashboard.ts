@@ -313,7 +313,7 @@ export async function cloneProperty(propertyId: string): Promise<{ success: bool
     // Fetch the original property
     const { data: original, error: fetchError } = await supabase()
         .from("properties")
-        .select("title, description, listing_type, property_type, commercial_type, price, area_sqft, bedrooms, bathrooms, furnishing, facing, floor, total_floors, possession_status, address, locality, city, state, rera_number")
+        .select("title, description, listing_type, property_type, commercial_type, price, area_sqft, bedrooms, bathrooms, furnishing, facing, floor, total_floors, possession_status, address, locality, city, state, rera_number, amenities, allow_phone, allow_whatsapp, allow_chat, contact_number, whatsapp_number")
         .eq("id", propertyId)
         .eq("owner_id", user.id)
         .single();

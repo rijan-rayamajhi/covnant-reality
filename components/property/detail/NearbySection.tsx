@@ -1,33 +1,184 @@
-import { TrainTrack, School, Hospital, ShoppingBag } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { TrainTrack, School, Hospital, ShoppingBag, Loader2 } from "lucide-react";
 
-// Nearby places are not stored in the DB — we show a generic city-aware placeholder
-// so at least the city name is correct. A future enhancement could use a Places API.
-const NEARBY_TEMPLATES = [
-    { label: "Metro / Railway Station", icon: TrainTrack },
-    { label: "School / College", icon: School },
-    { label: "Hospital", icon: Hospital },
-    { label: "Shopping Mall", icon: ShoppingBag },
+interface NearbyPlace {
+    label: string;
+    icon: React.ElementType;
+    name: string;
+    distance: string;
+    loading: boolean;
+}
+
+const TEMPLATES = [
+    { label: "Metro / Railway Station", category: "transport", icon: TrainTrack },
+    { label: "School / College", category: "education", icon: School },
+    { label: "Hospital", category: "health", icon: Hospital },
+    { label: "Shopping Mall", category: "shopping", icon: ShoppingBag },
 ];
 
-export function NearbySection() {
+interface NearbySectionProps {
+    latitude?: number | null;
+    longitude?: number | null;
+}
+
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+}
+
+interface OverpassElement {
+    type: string;
+    id: number;
+    lat?: number;
+    lon?: number;
+    center?: { lat: number; lon: number };
+    tags?: Record<string, string>;
+    dist?: number;
+}
+
+export function NearbySection({ latitude, longitude }: NearbySectionProps) {
+    const [fetchedPlaces, setFetchedPlaces] = useState<NearbyPlace[] | null>(null);
+
+    const hasCoords = !!latitude && !!longitude;
+
+    useEffect(() => {
+        if (!hasCoords || !latitude || !longitude) return;
+
+        let isMounted = true;
+
+        const fetchWithRetry = async (query: string) => {
+            const endpoints = [
+                "https://overpass-api.de/api/interpreter",
+                "https://lz4.overpass-api.de/api/interpreter",
+                "https://overpass.kumi.systems/api/interpreter",
+            ];
+
+            let lastError = null;
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(`${endpoint}?data=${encodeURIComponent(query)}`, {
+                        signal: AbortSignal.timeout(10000) // 10s timeout
+                    });
+                    if (response.ok) return await response.json();
+                    lastError = new Error(`Overpass ${endpoint} returned ${response.status}`);
+                } catch (err) {
+                    lastError = err as Error;
+                }
+            }
+            throw lastError || new Error("All Overpass endpoints failed");
+        };
+
+        const loadNearby = async () => {
+            try {
+                const radius = 5000;
+                const query = `
+                    [out:json][timeout:25];
+                    (
+                      nwr["railway"="station"](around:${radius}, ${latitude}, ${longitude});
+                      nwr["station"="subway"](around:${radius}, ${latitude}, ${longitude});
+                      nwr["amenity"~"school|college|university"](around:${radius}, ${latitude}, ${longitude});
+                      nwr["amenity"="hospital"](around:${radius}, ${latitude}, ${longitude});
+                      nwr["shop"~"mall|department_store"](around:${radius}, ${latitude}, ${longitude});
+                    );
+                    out center;
+                `;
+
+                const data = await fetchWithRetry(query);
+                const elements = (data.elements || []) as OverpassElement[];
+
+                const findNearest = (category: string) => {
+                    const filtered = elements.filter((el) => {
+                        const t = el.tags || {};
+                        if (category === "transport") return t.railway === "station" || t.station === "subway";
+                        if (category === "education") return ["school", "college", "university"].includes(t.amenity || "");
+                        if (category === "health") return t.amenity === "hospital";
+                        if (category === "shopping") return t.shop === "mall" || t.shop === "department_store";
+                        return false;
+                    });
+
+                    if (filtered.length === 0) return null;
+
+                    const sorted = filtered.map((el) => {
+                        const elLat = el.lat || (el.center && el.center.lat);
+                        const elLon = el.lon || (el.center && el.center.lon);
+                        if (!elLat || !elLon) return { ...el, dist: Infinity };
+                        const dist = calculateDistance(latitude, longitude, elLat, elLon);
+                        return { ...el, dist };
+                    }).sort((a, b) => (a.dist || 0) - (b.dist || 0));
+
+                    const nearest = sorted[0];
+                    return nearest.dist === Infinity ? null : nearest;
+                };
+
+                if (isMounted) {
+                    setFetchedPlaces(TEMPLATES.map(t => {
+                        const nearest = findNearest(t.category);
+                        if (!nearest) return { ...t, name: "Nearby", distance: "City Center", loading: false };
+                        const name = nearest.tags?.name || nearest.tags?.brand || t.label.split(" / ")[0];
+                        const distKm = nearest.dist || 0;
+                        const distanceLabel = distKm < 1 ? `${Math.round(distKm * 1000)}m` : `${distKm.toFixed(1)}km`;
+                        return { ...t, name, distance: distanceLabel, loading: false };
+                    }));
+                }
+            } catch (error) {
+                console.error("Error fetching nearby data:", error);
+                if (isMounted) {
+                    setFetchedPlaces(TEMPLATES.map(p => ({ ...p, loading: false, distance: "Nearby", name: "Nearby" })));
+                }
+            }
+        };
+
+        loadNearby();
+        return () => { isMounted = false; };
+    }, [hasCoords, latitude, longitude]);
+
+    const nearbyPlaces = useMemo(() => {
+        if (!hasCoords) {
+            return TEMPLATES.map(t => ({ ...t, name: "Nearby", distance: "City Center", loading: false }));
+        }
+        if (fetchedPlaces) return fetchedPlaces;
+        return TEMPLATES.map(t => ({ ...t, name: "Nearby", distance: "calculating...", loading: true }));
+    }, [hasCoords, fetchedPlaces]);
+
     return (
         <section className="py-6 border-b border-border bg-bg-card">
             <h3 className="text-lg font-bold text-text-primary mb-4">Nearby</h3>
 
-            <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:gap-x-6">
-                {NEARBY_TEMPLATES.map((place, index) => {
+            <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:gap-x-12">
+                {nearbyPlaces.map((place, index) => {
                     const Icon = place.icon;
                     return (
-                        <div key={index} className="flex items-center justify-between">
+                        <div key={index} className="flex items-center justify-between group">
                             <div className="flex items-center gap-3">
-                                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-50 border border-border flex-shrink-0">
-                                    <Icon className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
+                                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-50 border border-border flex-shrink-0 group-hover:bg-primary/5 group-hover:border-primary/20 transition-colors">
+                                    <Icon className="w-5 h-5 text-text-secondary group-hover:text-primary" strokeWidth={1.5} />
                                 </div>
-                                <span className="text-sm font-medium text-text-primary">{place.label}</span>
+                                <div className="flex flex-col">
+                                    <span className="text-xs text-text-muted leading-none mb-1">{place.label}</span>
+                                    {place.loading ? (
+                                        <div className="flex items-center gap-1.5 h-4">
+                                            <div className="w-20 h-3.5 bg-slate-100 animate-pulse rounded" />
+                                        </div>
+                                    ) : (
+                                        <span className="text-sm font-bold text-text-primary line-clamp-1">{place.name}</span>
+                                    )}
+                                </div>
                             </div>
-                            <span className="text-sm font-medium text-text-muted bg-slate-50 px-2.5 py-1 rounded-xl border border-border">
-                                Nearby
-                            </span>
+                            <div className="flex flex-col items-end">
+                                {place.loading ? (
+                                    <Loader2 className="w-3 h-3 text-primary animate-spin" />
+                                ) : (
+                                    <span className="text-[11px] font-bold text-primary bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/10 whitespace-nowrap">
+                                        {place.distance}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     );
                 })}

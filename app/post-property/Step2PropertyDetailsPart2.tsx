@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { ChevronDown, Loader2, Search, X } from "lucide-react";
 import { FormData } from "./PostPropertyContent";
 import { getStates, getCitiesByState, getLocalitiesByCity, State, City, Locality } from "@/lib/api/locations";
 
@@ -45,6 +45,7 @@ const POSSESSION_OPTIONS = [
 
 export function Step2PropertyDetailsPart2({ formData, updateFormData }: Step2PropertyDetailsPart2Props) {
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState("");
 
     const [states, setStates] = useState<State[]>([]);
     const [cities, setCities] = useState<City[]>([]);
@@ -103,6 +104,7 @@ export function Step2PropertyDetailsPart2({ formData, updateFormData }: Step2Pro
 
     const toggleDropdown = (dropdown: string) => {
         setOpenDropdown(openDropdown === dropdown ? null : dropdown);
+        setSearchTerm("");
     };
 
     const handleSelectDropdown = (field: string, value: string) => {
@@ -141,7 +143,50 @@ export function Step2PropertyDetailsPart2({ formData, updateFormData }: Step2Pro
             pincode: locality.pincode
         });
         setOpenDropdown(null);
+        setSearchTerm("");
     };
+
+    const filteredStates = states.filter(s =>
+        s.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const filteredCities = cities.filter(c =>
+        c.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const filteredLocalities = localities.filter(l =>
+        l.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        l.pincode.includes(searchTerm)
+    );
+
+    const DropdownSearch = ({ placeholder }: { placeholder: string }) => (
+        <div className="sticky top-0 bg-white border-b border-border p-2 z-[60]">
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                <input
+                    type="text"
+                    autoFocus
+                    className="w-full h-9 pl-9 pr-8 bg-slate-50 border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary/30"
+                    placeholder={placeholder}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                />
+                {searchTerm && (
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setSearchTerm("");
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-200 rounded-full transition-colors"
+                    >
+                        <X className="w-3 h-3 text-text-muted" />
+                    </button>
+                )}
+            </div>
+        </div>
+    );
 
     return (
         <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-4 duration-300 mt-2">
@@ -177,18 +222,30 @@ export function Step2PropertyDetailsPart2({ formData, updateFormData }: Step2Pro
                             </span>
                             <ChevronDown className={cn("w-4 h-4 text-text-muted transition-transform", openDropdown === "state" && "rotate-180")} />
                         </button>
-                        {openDropdown === "state" && !loadingStates && states.length > 0 && (
-                            <div className="absolute top-[76px] left-0 w-full bg-white border border-border rounded-xl shadow-lg overflow-hidden py-1 z-50">
-                                {states.map((st) => (
-                                    <button
-                                        key={st.id}
-                                        type="button"
-                                        onClick={() => handleSelectState(st)}
-                                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors"
-                                    >
-                                        {st.name}
-                                    </button>
-                                ))}
+                        {openDropdown === "state" && !loadingStates && (
+                            <div className="absolute top-[76px] left-0 w-full bg-white border border-border rounded-xl shadow-lg overflow-hidden z-50">
+                                <DropdownSearch placeholder="Search state..." />
+                                <div className="max-h-48 overflow-y-auto py-1">
+                                    {filteredStates.length > 0 ? (
+                                        filteredStates.map((st) => (
+                                            <button
+                                                key={st.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    handleSelectState(st);
+                                                    setSearchTerm("");
+                                                }}
+                                                className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors"
+                                            >
+                                                {st.name}
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="px-4 py-3 text-sm text-text-muted text-center font-medium">
+                                            No states found
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -214,18 +271,30 @@ export function Step2PropertyDetailsPart2({ formData, updateFormData }: Step2Pro
                             </span>
                             <ChevronDown className={cn("w-4 h-4 text-text-muted transition-transform", openDropdown === "city" && "rotate-180")} />
                         </button>
-                        {openDropdown === "city" && !loadingCities && cities.length > 0 && (
-                            <div className="absolute top-[76px] left-0 w-full max-h-48 overflow-y-auto bg-white border border-border rounded-xl shadow-lg py-1 z-[45]">
-                                {cities.map((ct) => (
-                                    <button
-                                        key={ct.id}
-                                        type="button"
-                                        onClick={() => handleSelectCity(ct)}
-                                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors"
-                                    >
-                                        {ct.name}
-                                    </button>
-                                ))}
+                        {openDropdown === "city" && !loadingCities && (
+                            <div className="absolute top-[76px] left-0 w-full bg-white border border-border rounded-xl shadow-lg overflow-hidden z-[45]">
+                                <DropdownSearch placeholder="Search city..." />
+                                <div className="max-h-48 overflow-y-auto py-1">
+                                    {filteredCities.length > 0 ? (
+                                        filteredCities.map((ct) => (
+                                            <button
+                                                key={ct.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    handleSelectCity(ct);
+                                                    setSearchTerm("");
+                                                }}
+                                                className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors"
+                                            >
+                                                {ct.name}
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="px-4 py-3 text-sm text-text-muted text-center font-medium">
+                                            No cities found
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -254,19 +323,31 @@ export function Step2PropertyDetailsPart2({ formData, updateFormData }: Step2Pro
                             </span>
                             <ChevronDown className={cn("w-4 h-4 text-text-muted transition-transform", openDropdown === "locality" && "rotate-180")} />
                         </button>
-                        {openDropdown === "locality" && !loadingLocalities && localities.length > 0 && (
-                            <div className="absolute top-[76px] left-0 w-full max-h-48 overflow-y-auto bg-white border border-border rounded-xl shadow-lg py-1 z-[40]">
-                                {localities.map((loc) => (
-                                    <button
-                                        key={loc.id}
-                                        type="button"
-                                        onClick={() => handleSelectLocality(loc)}
-                                        className="w-full flex justify-between items-center px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors text-left"
-                                    >
-                                        <span>{loc.name}</span>
-                                        <span className="text-slate-400 text-xs">{loc.pincode}</span>
-                                    </button>
-                                ))}
+                        {openDropdown === "locality" && !loadingLocalities && (
+                            <div className="absolute top-[76px] left-0 w-full bg-white border border-border rounded-xl shadow-lg overflow-hidden z-[40]">
+                                <DropdownSearch placeholder="Search locality or pincode..." />
+                                <div className="max-h-48 overflow-y-auto py-1">
+                                    {filteredLocalities.length > 0 ? (
+                                        filteredLocalities.map((loc) => (
+                                            <button
+                                                key={loc.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    handleSelectLocality(loc);
+                                                    setSearchTerm("");
+                                                }}
+                                                className="w-full flex justify-between items-center px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors text-left"
+                                            >
+                                                <span>{loc.name}</span>
+                                                <span className="text-slate-400 text-xs">{loc.pincode}</span>
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="px-4 py-3 text-sm text-text-muted text-center font-medium">
+                                            No localities found
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>

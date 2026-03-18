@@ -171,6 +171,7 @@ export function mapFormDataToRpcPayload(formData: PropertyFormData) {
         whatsapp_number: formData.whatsappNumber ?? null,
         allow_phone: formData.allowPhone ?? true,
         allow_whatsapp: formData.allowWhatsApp ?? true,
+        amenities: formData.amenities ?? [],
     };
 }
 

@@ -140,7 +140,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                             <AmenitiesSection property={property} />
                             <FloorPlanSection property={property} />
                             <MapSection property={property} />
-                            <NearbySection />
+                            <NearbySection latitude={property.latitude} longitude={property.longitude} />
                             <ProjectSection property={property} />
                             <BuilderSection property={property} />
                             <ReviewsSection propertyId={property.id} />
@@ -154,7 +154,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                     </div>
                 </div>
 
-                <StickyBottomCta propertyId={property.id} />
+                <StickyBottomCta property={property} />
             </div>
         </main>
     );

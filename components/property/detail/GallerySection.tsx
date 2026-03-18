@@ -121,13 +121,20 @@ export function GallerySection({ images, videos = [], verified, propertyId }: Ga
                 />
             </button>
 
+            {/* Bottom Right: Number Indicator */}
+            {displayMedia.length > 1 && (
+                <div className="absolute bottom-4 right-4 z-10 px-2.5 py-1 bg-black/40 backdrop-blur-sm rounded-full border border-white/20 text-white text-[10px] font-bold tracking-widest tabular-nums">
+                    {activeIndex + 1} / {displayMedia.length}
+                </div>
+            )}
+
             {/* Bottom Center: Indicator Dots */}
             {displayMedia.length > 1 && (
-                <div className="absolute bottom-4 left-0 right-0 z-10 flex justify-center gap-2">
+                <div className="absolute bottom-4 left-0 right-0 z-10 flex justify-center gap-1.5 pointer-events-none">
                     {displayMedia.map((_, idx) => (
                         <div
                             key={idx}
-                            className={`h-1.5 rounded-full transition-all duration-300 ${activeIndex === idx ? "bg-white w-5" : "bg-white/50 w-1.5"}`}
+                            className={`h-1.5 rounded-full transition-all duration-300 ${activeIndex === idx ? "bg-white w-6 opacity-100" : "bg-white/40 w-1.5 opacity-50"}`}
                         />
                     ))}
                 </div>

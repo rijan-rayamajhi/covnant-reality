@@ -70,7 +70,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             {/* Sidebar Component */}
             <aside
                 className={cn(
-                    "fixed top-0 left-0 bottom-0 z-50 w-[260px] bg-white border-r border-border transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static flex flex-col shadow-sm lg:shadow-none",
+                    "fixed top-0 left-0 bottom-0 z-50 w-[260px] bg-white border-r border-border transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen flex flex-col shadow-sm lg:shadow-none",
                     isSidebarOpen ? "translate-x-0" : "-translate-x-full"
                 )}
             >
@@ -119,7 +119,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             </aside>
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col min-w-0 min-h-screen overflow-hidden">
+            <main className="flex-1 flex flex-col min-w-0 min-h-screen">
                 {children}
             </main>
         </div>

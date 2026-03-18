@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Maximize2, Lock, Unlock, Loader2, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { Maximize2, Lock, Unlock, Loader2, CheckCircle2, Clock, XCircle, FileText, ExternalLink } from "lucide-react";
 import type { Property } from "@/types";
 import { useAuth } from "@/components/AuthContext";
 import {
@@ -19,35 +19,34 @@ export function FloorPlanSection({ property }: FloorPlanSectionProps) {
     const { bedrooms, area, type, id: propertyId } = property;
     const { user, userRole } = useAuth();
 
-    const [requestStatus, setRequestStatus] = useState<FloorPlanRequestStatus | null | "loading">("loading");
+    const [dbStatus, setDbStatus] = useState<FloorPlanRequestStatus | null | "loading">("loading");
     const [submitting, setSubmitting] = useState(false);
     const [imageError, setImageError] = useState(false);
     const [fullscreenOpen, setFullscreenOpen] = useState(false);
 
-    const hasFloorPlan =
-        property.floorPlans &&
-        property.floorPlans.length > 0 &&
-        property.floorPlans[0] &&
-        property.floorPlans[0].trim() !== "";
+    const floorPlanUrl = property.floorPlans?.[0] || "";
+    const hasFloorPlan = floorPlanUrl.trim() !== "";
+    const isPdf = floorPlanUrl.toLowerCase().split('?')[0].endsWith('.pdf');
 
     const isOwnerOrAdmin =
         userRole === "admin" ||
         (user && property.ownerId && user.id === property.ownerId);
 
-    // ── Fetch request status ────────────────────────────────────────────
-    const fetchStatus = useCallback(async () => {
-        if (!user || isOwnerOrAdmin || type === "plot") {
-            setRequestStatus(null);
-            return;
-        }
-        const status = await getFloorPlanRequestStatus(propertyId);
-        setRequestStatus(status);
-    }, [user, isOwnerOrAdmin, type, propertyId]);
+    const shouldFetchStatus = !!user && !isOwnerOrAdmin && type !== "plot";
+    const requestStatus = shouldFetchStatus ? dbStatus : null;
 
+    // ── Fetch request status ────────────────────────────────────────────
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+        if (!shouldFetchStatus) return;
+
+        let isMounted = true;
+        const fetchStatus = async () => {
+            const status = await getFloorPlanRequestStatus(propertyId);
+            if (isMounted) setDbStatus(status);
+        };
         fetchStatus();
-    }, [fetchStatus]);
+        return () => { isMounted = false; };
+    }, [shouldFetchStatus, propertyId]);
 
     // Hide section if it's a plot
     if (type === "plot") return null;
@@ -63,7 +62,7 @@ export function FloorPlanSection({ property }: FloorPlanSectionProps) {
         setSubmitting(true);
         const result = await requestFloorPlanAccess(propertyId);
         if (result.success) {
-            setRequestStatus("pending");
+            setDbStatus("pending");
         } else {
             alert(result.error || "Failed to submit request.");
         }
@@ -77,63 +76,96 @@ export function FloorPlanSection({ property }: FloorPlanSectionProps) {
         <section className="py-6 border-b border-border bg-bg-card">
             <h3 className="text-lg font-bold text-text-primary mb-4">Floor Plan</h3>
 
-            <div className="border border-border rounded-2xl p-4 bg-bg-card">
-                <h4 className="font-semibold text-text-primary mb-1">
-                    {label}{area > 0 ? ` • ${area.toLocaleString()} sq.ft.` : ""}
-                </h4>
-                <p className="text-sm text-text-muted mb-4">Super Built-up Area</p>
+            <div className="bg-bg rounded-xl p-5 border border-border">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+                    <div>
+                        <h4 className="font-bold text-text-primary text-base">
+                            {label}
+                        </h4>
+                        <p className="text-sm text-text-muted mb-4">
+                            {area > 0 ? `${area.toLocaleString()} sq.ft.` : ""} Super Built-up Area
+                        </p>
 
-                <div className="relative w-full aspect-[4/3] bg-bg-card border border-border rounded-xl overflow-hidden mb-4 flex items-center justify-center group">
-                    {hasFloorPlan && isUnlocked && !imageError ? (
-                        <>
-                            <Image
-                                src={property.floorPlans[0]}
-                                alt={`${label} Floor Plan`}
-                                fill
-                                className="object-contain p-2"
-                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                onError={() => setImageError(true)}
-                            />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors pointer-events-none" />
-                            <button
-                                onClick={() => setFullscreenOpen(true)}
-                                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                                aria-label="View fullscreen"
-                            >
-                                <div className="p-2 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm">
-                                    <Maximize2 className="w-4 h-4 text-text-primary" />
-                                </div>
-                            </button>
-                        </>
-                    ) : !isUnlocked ? (
-                        /* ── LOCKED STATE ── */
-                        <LockedOverlay
-                            requestStatus={requestStatus}
-                            submitting={submitting}
-                            onRequest={handleRequestAccess}
-                        />
-                    ) : (
-                        /* ── NO FLOOR PLAN UPLOADED ── */
-                        <NoFloorPlanPlaceholder />
-                    )}
-                </div>
+                        {/* Status badge for non-admin/owner */}
+                        {!isOwnerOrAdmin && requestStatus && requestStatus !== "loading" && (
+                            <div className="mb-4 lg:mb-0">
+                                <StatusBadge status={requestStatus as FloorPlanRequestStatus} />
+                            </div>
+                        )}
 
-                {/* Status badge below the image */}
-                {isOwnerOrAdmin ? (
-                    <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 border border-slate-100 p-3 rounded-xl mt-2">
-                        <Lock className="w-4 h-4 text-slate-400" />
-                        <span>Floor plan is locked for public viewing. You have access as {userRole === "admin" ? "an Admin" : "the Owner"}.</span>
+                        {/* Admin/Owner info */}
+                        {isOwnerOrAdmin && (
+                            <div className="flex items-start gap-2 text-xs text-text-muted bg-bg-card border border-border p-3 rounded-xl mb-4 lg:mb-0">
+                                <Lock className="w-3.5 h-3.5 text-text-muted mt-0.5" />
+                                <span>Floor plan is locked for public viewing. You have access as {userRole === "admin" ? "an Admin" : "the Owner"}.</span>
+                            </div>
+                        )}
                     </div>
-                ) : requestStatus && requestStatus !== "loading" ? (
-                    <StatusBadge status={requestStatus as FloorPlanRequestStatus} />
-                ) : null}
+
+                    <div className="relative w-full aspect-[16/10] bg-bg-card border border-border rounded-xl overflow-hidden flex items-center justify-center group shadow-sm transition-all hover:shadow-md">
+                        {hasFloorPlan && isUnlocked ? (
+                            <>
+                                {isPdf ? (
+                                    <div className="flex flex-col items-center gap-2 p-4 text-center">
+                                        <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center text-red-500 mb-1">
+                                            <FileText className="w-6 h-6" />
+                                        </div>
+                                        <span className="text-xs font-bold text-text-primary">PDF Floor Plan</span>
+                                        <p className="text-[10px] text-text-muted">Click to view or download</p>
+                                    </div>
+                                ) : !imageError ? (
+                                    <Image
+                                        src={floorPlanUrl}
+                                        alt={`${label} Floor Plan`}
+                                        fill
+                                        className="object-contain p-2"
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 40vw, 30vw"
+                                        onError={() => setImageError(true)}
+                                    />
+                                ) : (
+                                    <div className="flex flex-col items-center gap-2 p-4 text-center">
+                                        <FileText className="w-8 h-8 text-text-muted" />
+                                        <span className="text-xs font-medium text-text-muted text-center px-4">Image could not be loaded. Click to try direct access.</span>
+                                    </div>
+                                )}
+                                
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors pointer-events-none" />
+                                <button
+                                    onClick={() => setFullscreenOpen(true)}
+                                    className="absolute inset-0 w-full h-full cursor-pointer z-10"
+                                    aria-label="View fullscreen"
+                                />
+                                <div className="absolute top-2 right-2 z-20 pointer-events-none">
+                                    <div className="p-1.5 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-border">
+                                        {isPdf ? (
+                                            <ExternalLink className="w-3.5 h-3.5 text-text-primary" />
+                                        ) : (
+                                            <Maximize2 className="w-3.5 h-3.5 text-text-primary" />
+                                        )}
+                                    </div>
+                                </div>
+                            </>
+                        ) : !isUnlocked ? (
+                            /* ── LOCKED STATE ── */
+                            <LockedOverlay
+                                requestStatus={requestStatus}
+                                submitting={submitting}
+                                onRequest={handleRequestAccess}
+                            />
+                        ) : (
+                            /* ── NO FLOOR PLAN UPLOADED ── */
+                            <NoFloorPlanPlaceholder />
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* Fullscreen Modal */}
             {fullscreenOpen && hasFloorPlan && (
                 <FullscreenModal
-                    src={property.floorPlans[0]}
+                    src={floorPlanUrl}
                     alt={`${label} Floor Plan`}
+                    isPdf={isPdf}
                     onClose={() => setFullscreenOpen(false)}
                 />
             )}
@@ -164,14 +196,14 @@ function LockedOverlay({
             </div>
 
             {/* Lock icon + CTA */}
-            <div className="relative z-10 flex flex-col items-center gap-3 px-4 text-center">
-                <div className="w-14 h-14 bg-white rounded-2xl shadow-md flex items-center justify-center mb-1">
-                    <Lock className="w-6 h-6 text-slate-500" />
+            <div className="relative z-10 flex flex-col items-center gap-2 px-4 text-center">
+                <div className="w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center">
+                    <Lock className="w-4 h-4 text-slate-500" />
                 </div>
 
-                <p className="text-sm font-semibold text-slate-700">Floor Plan is Locked</p>
-                <p className="text-xs text-slate-500 max-w-[220px]">
-                    Request access to view the detailed floor plan of this property
+                <p className="text-xs font-bold text-slate-700">Floor Plan Locked</p>
+                <p className="text-[10px] text-slate-500 max-w-[180px] leading-tight">
+                    Request access to view the detailed floor plan
                 </p>
 
                 {requestStatus === "loading" ? (
@@ -192,14 +224,14 @@ function LockedOverlay({
                     <button
                         onClick={onRequest}
                         disabled={submitting}
-                        className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl shadow-sm hover:bg-primary/90 active:scale-[0.97] transition-all disabled:opacity-60"
+                        className="mt-1 inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg shadow-sm hover:bg-primary/90 active:scale-[0.97] transition-all disabled:opacity-60"
                     >
                         {submitting ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="w-3 h-3 animate-spin" />
                         ) : (
-                            <Unlock className="w-4 h-4" />
+                            <Unlock className="w-3 h-3" />
                         )}
-                        {submitting ? "Requesting…" : "Request Floor Plan"}
+                        {submitting ? "Requesting…" : "Request Access"}
                     </button>
                 )}
             </div>
@@ -261,10 +293,12 @@ function StatusBadge({ status }: { status: FloorPlanRequestStatus }) {
 function FullscreenModal({
     src,
     alt,
+    isPdf,
     onClose,
 }: {
     src: string;
     alt: string;
+    isPdf: boolean;
     onClose: () => void;
 }) {
     return (
@@ -273,23 +307,34 @@ function FullscreenModal({
             onClick={onClose}
         >
             <div
-                className="relative max-w-4xl max-h-[90vh] w-full"
+                className="relative max-w-5xl max-h-[90vh] w-full h-full"
                 onClick={(e) => e.stopPropagation()}
             >
                 <button
                     onClick={onClose}
-                    className="absolute -top-10 right-0 text-white text-sm font-medium hover:text-white/80 transition-colors"
+                    className="absolute -top-10 right-0 text-white text-sm font-medium hover:text-white/80 transition-colors flex items-center gap-2"
                 >
+                    <Maximize2 className="w-4 h-4 rotate-45" />
                     ✕ Close
                 </button>
-                <div className="relative w-full aspect-[4/3] bg-white rounded-2xl overflow-hidden">
-                    <Image
-                        src={src}
-                        alt={alt}
-                        fill
-                        className="object-contain p-4"
-                        sizes="(max-width: 768px) 100vw, 80vw"
-                    />
+                <div className="relative w-full h-full bg-white rounded-2xl overflow-hidden shadow-2xl">
+                    {isPdf ? (
+                        <iframe
+                            src={`${src}#toolbar=0`}
+                            className="w-full h-full border-none"
+                            title={alt}
+                        />
+                    ) : (
+                        <div className="relative w-full h-full">
+                            <Image
+                                src={src}
+                                alt={alt}
+                                fill
+                                className="object-contain p-4"
+                                sizes="90vw"
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
