@@ -30,6 +30,11 @@ export function LeadModal({ isOpen, onClose, actionType, onSuccessAction }: Lead
         e.preventDefault();
         if (!name.trim() || !phone.trim()) return;
 
+        if (!/^\d{10}$/.test(phone)) {
+            setError("Please enter a valid 10-digit phone number.");
+            return;
+        }
+
         setIsSubmitting(true);
         setError(null);
 
@@ -112,10 +117,13 @@ export function LeadModal({ isOpen, onClose, actionType, onSuccessAction }: Lead
                             />
                             <input
                                 type="tel"
-                                placeholder="Phone Number"
+                                placeholder="Phone Number (10 digits)"
                                 required
                                 value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, "");
+                                    if (val.length <= 10) setPhone(val);
+                                }}
                                 disabled={isSubmitting}
                                 className="w-full h-12 px-4 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
                             />

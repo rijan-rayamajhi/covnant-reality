@@ -11,9 +11,9 @@ interface TabDef {
 const TABS: TabDef[] = [
     { id: "saved", label: "Saved" },
     { id: "searches", label: "Searches" },
-    { id: "visits", label: "Visits" },
+    /* { id: "visits", label: "Visits" },
     { id: "alerts", label: "Alerts" },
-    { id: "bookings", label: "Bookings" },
+    { id: "bookings", label: "Bookings" }, */
     { id: "profile", label: "Profile" },
 ];
 

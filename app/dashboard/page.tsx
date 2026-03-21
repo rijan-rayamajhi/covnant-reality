@@ -7,29 +7,22 @@ import {
     DashboardTabs,
     SavedSection,
     SearchesSection,
-    VisitsSection,
-    AlertsSection,
-    BookingsSection,
     ProfileSection,
     DashboardSkeleton,
 } from "@/components/dashboard";
 import {
     fetchSavedProperties,
     fetchSavedSearches,
-    fetchSiteVisits,
-    fetchAlerts,
     fetchProfile,
 } from "@/lib/supabase/dashboard";
 import type { DashboardTabId } from "@/components/dashboard/types";
 import type {
     SavedPropertyRow,
     SavedSearch,
-    SiteVisitRow,
-    AlertRow,
     UserProfile,
 } from "@/components/dashboard/types";
 
-const VALID_TABS: DashboardTabId[] = ["saved", "searches", "visits", "alerts", "bookings", "profile"];
+const VALID_TABS: DashboardTabId[] = ["saved", "searches", /* "visits", "alerts", "bookings", */ "profile"];
 
 function getTabFromParam(param: string | null): DashboardTabId {
     return VALID_TABS.includes(param as DashboardTabId) ? (param as DashboardTabId) : "saved";
@@ -46,8 +39,7 @@ function DashboardContent() {
     // ─── Data state ─────────────────────────────────────────────────────────
     const [savedProperties, setSavedProperties] = useState<SavedPropertyRow[]>([]);
     const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
-    const [siteVisits, setSiteVisits] = useState<SiteVisitRow[]>([]);
-    const [alerts, setAlerts] = useState<AlertRow[]>([]);
+    // Removed unused variables
     const [profile, setProfile] = useState<UserProfile | null>(null);
 
     // ─── Loading state per tab ──────────────────────────────────────────────
@@ -91,22 +83,6 @@ function DashboardContent() {
                     setSavedSearches(data);
                     break;
                 }
-                case "visits": {
-                    const data = await fetchSiteVisits();
-                    setSiteVisits(data);
-                    break;
-                }
-                case "alerts": {
-                    const data = await fetchAlerts();
-                    setAlerts(data);
-                    break;
-                }
-                case "bookings": {
-                    // Bookings are site visits filtered to upcoming
-                    const data = await fetchSiteVisits();
-                    setSiteVisits(data);
-                    break;
-                }
                 case "profile": {
                     const data = await fetchProfile();
                     setProfile(data);
@@ -125,11 +101,7 @@ function DashboardContent() {
         fetchTabData(activeTab);
     }, [activeTab, fetchTabData]);
 
-    // ─── Derived data ───────────────────────────────────────────────────────
-    // Bookings = site visits that are not completed/cancelled
-    const upcomingBookings = siteVisits.filter(
-        (v) => v.status === "requested" || v.status === "confirmed"
-    );
+    // Removed upcoming bookings
 
     return (
         <>
@@ -156,7 +128,7 @@ function DashboardContent() {
                     {activeTab === "searches" && (
                         <SearchesSection searches={savedSearches} loading={loading.searches} />
                     )}
-                    {activeTab === "visits" && (
+                    {/* {activeTab === "visits" && (
                         <VisitsSection visits={siteVisits} loading={loading.visits} />
                     )}
                     {activeTab === "alerts" && (
@@ -164,7 +136,7 @@ function DashboardContent() {
                     )}
                     {activeTab === "bookings" && (
                         <BookingsSection bookings={upcomingBookings} loading={loading.bookings} />
-                    )}
+                    )} */}
                     {activeTab === "profile" && (
                         <ProfileSection profile={profile} loading={loading.profile} />
                     )}

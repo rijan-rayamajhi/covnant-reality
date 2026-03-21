@@ -8,8 +8,6 @@ import { RecommendedForYou } from "@/components/ui/RecommendedForYou";
 import { VerifiedProperties } from "@/components/ui/VerifiedProperties";
 import { AffordableRentals } from "@/components/ui/AffordableRentals";
 import { FeaturedProjects } from "@/components/ui/FeaturedProjects";
-import { TrendingLocations } from "@/components/ui/TrendingLocations";
-import { CompareTeaser } from "@/components/ui/CompareTeaser";
 import { TrustSection } from "@/components/ui/TrustSection";
 // import { TopAgents } from "@/components/ui/TopAgents";
 import { Testimonials } from "@/components/ui/Testimonials";
@@ -45,10 +43,7 @@ export default function HomePage() {
       <FeaturedProjects />
 
       {/* 9. Trending Locations */}
-      <TrendingLocations />
-
-      {/* 10. Compare Teaser */}
-      <CompareTeaser />
+      {/* <TrendingLocations /> */}
 
       {/* 11. Trust Section */}
       <TrustSection />

@@ -48,6 +48,7 @@ interface PropertyRow {
     amenities: string[] | null;
     allow_chat: boolean | null;
     landmark: string | null;
+    pincode: string | null;
     localities?: { latitude: number | null; longitude: number | null }[] | null;
     property_media?: { media_url: string; media_type: string }[] | null;
 }
@@ -157,6 +158,7 @@ function mapRowToProperty(row: PropertyRow): Property {
         amenities: row.amenities ?? [],
         allowChat: row.allow_chat ?? true,
         landmark: row.landmark ?? null,
+        pincode: row.pincode ?? null,
         floorPlans: floorPlanUrls,
     };
 }
@@ -183,7 +185,7 @@ const PROPERTY_SELECT = `
     price, area_sqft, area_value, area_unit, bedrooms, bathrooms,
     furnishing, floor, total_floors, facing, possession_status,
     address, locality, city, state, status, is_verified, is_featured, created_at,
-    latitude, longitude, contact_number, whatsapp_number, amenities, allow_chat, landmark,
+    latitude, longitude, contact_number, whatsapp_number, amenities, allow_chat, landmark, pincode,
     localities ( latitude, longitude ),
     property_media ( media_url, media_type )
 `;

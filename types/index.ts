@@ -34,6 +34,7 @@ export interface Property {
     pricePerSqFt?: number | null;
     latitude?: number | null;
     longitude?: number | null;
+    pincode?: string | null;
 
     // Reviews
     rating?: number;

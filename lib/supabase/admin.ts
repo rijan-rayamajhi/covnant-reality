@@ -217,6 +217,49 @@ export async function fetchAdminLeads(
     return { data: data.data, totalCount: data.totalCount, error: null };
 }
 
+/* ── Site Visits ───────────────────────────────────────────── */
+
+export interface AdminVisit {
+    id: string;
+    name: string | null;
+    phone: string | null;
+    status: string;
+    created_at: string;
+    property_id: string | null;
+    property_title: string | null;
+    buyer_name: string | null;
+    buyer_phone: string | null;
+}
+
+/**
+ * Fetch site visits with property + buyer info – paginated, with optional status filter.
+ */
+export async function fetchAdminVisits(
+    { limit = DEFAULT_LIMIT, offset = 0, status = "" }: PaginationParams & { status?: string } = {}
+): Promise<PaginatedResult<AdminVisit>> {
+    const statusParam = status ? `&status=${status}` : "";
+    const { data, error } = await apiFetch<{ data: AdminVisit[]; totalCount: number }>(
+        `/api/admin/visits?limit=${limit}&offset=${offset}${statusParam}`
+    );
+    if (error || !data) return { data: null, totalCount: 0, error };
+    return { data: data.data, totalCount: data.totalCount, error: null };
+}
+
+/**
+ * Update a site visit's status.
+ */
+export async function updateAdminVisitStatus(
+    visitId: string,
+    status: string
+): Promise<{ success: boolean; error: string | null }> {
+    const { data, error } = await apiFetch<{ success: boolean }>("/api/admin/visits", {
+        method: "PATCH",
+        body: JSON.stringify({ visitId, status }),
+    });
+    if (error || !data) return { success: false, error };
+    return { success: true, error: null };
+}
+
 /* ── Analytics (aggregates) ────────────────────────────────── */
 
 /**

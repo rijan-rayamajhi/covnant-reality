@@ -58,6 +58,35 @@ const FURNISHING_MAP: Record<string, string> = {
     "Unfurnished": "unfurnished",
 };
 
+/* ── Geocoding ────────────────────────────────────────────── */
+
+/**
+ * Geocode an Indian pincode to lat/lon using Nominatim (OpenStreetMap).
+ * Returns null if geocoding fails — never blocks property submission.
+ */
+async function geocodePincode(
+    pincode: string
+): Promise<{ latitude: number; longitude: number } | null> {
+    try {
+        const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?postalcode=${encodeURIComponent(pincode)}&country=India&format=json&limit=1`,
+            {
+                headers: { "User-Agent": "CovnantReality/1.0" },
+                signal: AbortSignal.timeout(5000),
+            }
+        );
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (!data || data.length === 0) return null;
+        const lat = parseFloat(data[0].lat);
+        const lon = parseFloat(data[0].lon);
+        if (isNaN(lat) || isNaN(lon)) return null;
+        return { latitude: lat, longitude: lon };
+    } catch {
+        return null;
+    }
+}
+
 /* ── Validation ───────────────────────────────────────────── */
 
 export function validateFormData(formData: PropertyFormData): ValidationResult {
@@ -300,7 +329,19 @@ export async function submitAdminProperty(
 
     const propertyId: string = rpcData.property_id;
 
-    // 2. Upload all media files using targetOwnerId so paths match ownership
+    // 2. Geocode pincode → lat/lon and update the property row
+    if (formData.pincode) {
+        geocodePincode(formData.pincode).then(async (coords) => {
+            if (coords) {
+                await supabase
+                    .from("properties")
+                    .update({ latitude: coords.latitude, longitude: coords.longitude })
+                    .eq("id", propertyId);
+            }
+        });
+    }
+
+    // 3. Upload all media files using targetOwnerId so paths match ownership
     const photos = formData.photos ?? [];
     const videos = formData.videos ?? [];
     const floorPlans = formData.floorPlans ?? [];

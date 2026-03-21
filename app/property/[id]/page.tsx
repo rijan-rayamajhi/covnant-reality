@@ -140,7 +140,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                             <AmenitiesSection property={property} />
                             <FloorPlanSection property={property} />
                             <MapSection property={property} />
-                            <NearbySection latitude={property.latitude} longitude={property.longitude} />
+                            <NearbySection latitude={property.latitude} longitude={property.longitude} pincode={property.pincode} />
                             <ProjectSection property={property} />
                             <BuilderSection property={property} />
                             <ReviewsSection propertyId={property.id} />

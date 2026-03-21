@@ -3,9 +3,6 @@
 import {
     Heart,
     Search,
-    CalendarDays,
-    BellRing,
-    CalendarCheck,
     UserCircle,
     LogOut,
 } from "lucide-react";
@@ -22,9 +19,9 @@ interface SidebarItem {
 const SIDEBAR_ITEMS: SidebarItem[] = [
     { id: "saved", label: "Saved", icon: Heart },
     { id: "searches", label: "Searches", icon: Search },
-    { id: "visits", label: "Visits", icon: CalendarDays },
+    /* { id: "visits", label: "Visits", icon: CalendarDays },
     { id: "alerts", label: "Alerts", icon: BellRing },
-    { id: "bookings", label: "Bookings", icon: CalendarCheck },
+    { id: "bookings", label: "Bookings", icon: CalendarCheck }, */
 ];
 
 interface DashboardSidebarProps {
