@@ -219,3 +219,22 @@ export interface PropertyReview {
     // Joined field from auth.users (usually mapped by the client)
     user_name?: string;
 }
+
+// ─── Search Category Types ──────────────────────────────────────────────────
+
+export interface SearchSubtype {
+    id: string;
+    category_id: string;
+    name: string;
+    is_active: boolean;
+    display_order: number;
+}
+
+export interface SearchCategory {
+    id: string;
+    name: string;
+    slug: string;
+    is_active: boolean;
+    display_order: number;
+    subtypes: SearchSubtype[];
+}

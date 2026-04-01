@@ -8,41 +8,10 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/AuthContext";
 import { SearchLocationResult, searchLocations } from "@/lib/api/locations";
-
-// ─── Data ────────────────────────────────────────────────────────────────────
-
-const PRIMARY_TABS = [
-    { label: "Buy", value: "buy" },
-    { label: "Rent", value: "rent" },
-    { label: "Sell", value: "sell" },
-] as const;
-
-const RESIDENTIAL_SUBTYPES = [
-    "Flat/Apartment",
-    "Builder Floor",
-    "Independent House/Villa",
-    "Residential Land",
-    "1 RK/ Studio Apartment",
-    "Farm House",
-    "Serviced Apartments",
-    "Other",
-] as const;
-
-const COMMERCIAL_SUBTYPES = [
-    "Ready to Move Offices",
-    "Bare Shell Offices",
-    "Shops & Retail",
-    "Commercial/Inst. Land",
-    "Agricultural/Farm Land",
-    "Industrial Land/Plots",
-    "Warehouse",
-    "Cold Storage",
-    "Factory & Manufacturing",
-    "Hotel/Resorts",
-] as const;
+import { SearchCategory } from "@/types";
+import { fetchSearchCategories } from "@/lib/supabase/homepage";
 
 type PrimaryTab = "buy" | "rent" | "sell";
-type CategoryTab = "residential" | "commercial";
 
 // ─── Portal helpers ───────────────────────────────────────────────────────────
 
@@ -237,13 +206,24 @@ export function HeroSearch() {
     const { user, userRole } = useAuth();
     const canPostProperty = userRole !== "buyer" && userRole !== "tenant";
     const visibleTabs = useMemo(
-        () => canPostProperty ? PRIMARY_TABS : PRIMARY_TABS.filter((t) => t.value !== "sell"),
+        () => canPostProperty ? [
+            { label: "Buy", value: "buy" },
+            { label: "Rent", value: "rent" },
+            { label: "Sell", value: "sell" },
+        ] : [
+            { label: "Buy", value: "buy" },
+            { label: "Rent", value: "rent" },
+        ],
         [canPostProperty]
     );
     const [activeTab, setActiveTab] = useState<PrimaryTab>("buy");
-    const [activeCategory, setActiveCategory] = useState<CategoryTab | null>(null);
-    const [residentialSub, setResidentialSub] = useState<string | null>(null);
-    const [commercialSub, setCommercialSub] = useState<string | null>(null);
+    const [categories, setCategories] = useState<SearchCategory[]>([]);
+    const [activeCategorySlug, setActiveCategorySlug] = useState<string | null>(null);
+    const [selectedSubtypes, setSelectedSubtypes] = useState<Record<string, string | null>>({});
+
+    useEffect(() => {
+        fetchSearchCategories().then(setCategories);
+    }, []);
 
     // Autocomplete State
     const [location, setLocation] = useState("");
@@ -293,8 +273,8 @@ export function HeroSearch() {
         }
         const params = new URLSearchParams();
         params.set("type", activeTab === "buy" ? "sell" : "rent");
-        if (activeCategory) params.set("category", activeCategory);
-        const sub = activeCategory === "residential" ? residentialSub : commercialSub;
+        if (activeCategorySlug) params.set("category", activeCategorySlug);
+        const sub = activeCategorySlug ? selectedSubtypes[activeCategorySlug] : null;
         if (sub) params.set("subtype", sub.toLowerCase().replace(/[/&,\s]+/g, "-"));
 
         if (selectedLocation) {
@@ -382,36 +362,31 @@ export function HeroSearch() {
                         {/* Divider */}
                         <div className="h-px bg-slate-100 mb-3 sm:mb-4" />
 
-                        {/* ── Row 2: Residential / Commercial ── */}
-                        <div className="flex items-center gap-2 mb-4 sm:mb-6" role="group" aria-label="Property category">
-                            <CategoryDropdown
-                                label="Residential"
-                                subtypes={RESIDENTIAL_SUBTYPES}
-                                isActive={activeCategory === "residential"}
-                                onToggle={() =>
-                                    setActiveCategory((p: CategoryTab | null) => p === "residential" ? null : "residential")
-                                }
-                                selectedSub={residentialSub}
-                                onSubSelect={(sub) => {
-                                    setResidentialSub(sub);
-                                    setActiveCategory("residential");
-                                }}
-                                onClear={() => setResidentialSub(null)}
-                            />
-                            <CategoryDropdown
-                                label="Commercial"
-                                subtypes={COMMERCIAL_SUBTYPES}
-                                isActive={activeCategory === "commercial"}
-                                onToggle={() =>
-                                    setActiveCategory((p: CategoryTab | null) => p === "commercial" ? null : "commercial")
-                                }
-                                selectedSub={commercialSub}
-                                onSubSelect={(sub) => {
-                                    setCommercialSub(sub);
-                                    setActiveCategory("commercial");
-                                }}
-                                onClear={() => setCommercialSub(null)}
-                            />
+                        {/* ── Row 2: Dynamic Categories ── */}
+                        <div className="flex items-center gap-2 mb-4 sm:mb-6 flex-wrap" role="group" aria-label="Property category">
+                            {categories.map((cat) => (
+                                <CategoryDropdown
+                                    key={cat.id}
+                                    label={cat.name}
+                                    subtypes={cat.subtypes.map(s => s.name)}
+                                    isActive={activeCategorySlug === cat.slug}
+                                    onToggle={() =>
+                                        setActiveCategorySlug((p) => p === cat.slug ? null : cat.slug)
+                                    }
+                                    selectedSub={selectedSubtypes[cat.slug] || null}
+                                    onSubSelect={(sub) => {
+                                        setSelectedSubtypes(p => ({ ...p, [cat.slug]: sub }));
+                                        setActiveCategorySlug(cat.slug);
+                                    }}
+                                    onClear={() => setSelectedSubtypes(p => ({ ...p, [cat.slug]: null }))}
+                                />
+                            ))}
+                            {categories.length === 0 && (
+                                <div className="animate-pulse flex gap-2">
+                                    <div className="h-10 w-24 bg-slate-100 rounded-xl"></div>
+                                    <div className="h-10 w-24 bg-slate-100 rounded-xl"></div>
+                                </div>
+                            )}
                         </div>
 
                         {/* ── Row 3: Inputs ── */}

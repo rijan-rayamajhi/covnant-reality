@@ -37,21 +37,24 @@ export function AffordableRentals() {
 
     return (
         <section className="py-12 lg:py-20 bg-slate-50">
-            <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex items-center justify-between mb-6">
-                <div>
-                    <h2 className="text-xl sm:text-2xl font-semibold text-text-primary">
-                        Affordable Rentals &amp; PG
+            <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 lg:mb-10">
+                <div className="space-y-1">
+                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900">
+                        Affordable Rentals & PG
                     </h2>
-                    <p className="text-sm md:text-base text-slate-500 mt-1">
+                    <p className="text-sm sm:text-base lg:text-lg text-slate-500 font-medium">
                         Move in ready homes{selectedCity ? ` in ${selectedCity}` : ""}
                     </p>
                 </div>
                 <Link
                     href="/search?type=rent"
-                    className="text-sm font-medium text-primary hover:text-primary-hover transition-colors"
+                    className="inline-flex items-center text-sm sm:text-base font-semibold text-blue-600 hover:text-blue-700 hover:translate-x-1 transition-all duration-200 group w-fit"
                     aria-label="Explore affordable rentals"
                 >
                     Explore Needs
+                    <svg className="ml-2 w-4 h-4 transform group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="9 5l7 7-7 7" />
+                    </svg>
                 </Link>
             </div>
 

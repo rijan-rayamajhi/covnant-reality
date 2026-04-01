@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import type { Property, Project, Agent, PropertyType } from "@/types";
+import type { Property, Project, Agent, PropertyType, SearchCategory, SearchSubtype } from "@/types";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -393,5 +393,35 @@ export async function fetchTopAgents(limit = 8, city?: string): Promise<Agent[]>
         rating: 0,
         reviews: 0,
         operatingLocation: row.city || "Location not set",
+    }));
+}
+
+// ─── Search Categories Fetcher ──────────────────────────────────────────────
+
+export async function fetchSearchCategories(): Promise<SearchCategory[]> {
+    const { data: categories, error: catError } = await supabase()
+        .from("search_categories")
+        .select(`
+            *,
+            subtypes:search_subtypes (*)
+        `)
+        .eq("is_active", true)
+        .order("display_order", { ascending: true });
+
+    if (catError) {
+        console.error("[Homepage] fetchSearchCategories error:", catError.message);
+        return [];
+    }
+
+    // Map and ensure subtypes are present and sorted
+    return (categories || []).map((cat: SearchCategory) => ({
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        is_active: cat.is_active,
+        display_order: cat.display_order,
+        subtypes: (cat.subtypes || [])
+            .filter((s: SearchSubtype) => s.is_active)
+            .sort((a: SearchSubtype, b: SearchSubtype) => a.display_order - b.display_order)
     }));
 }

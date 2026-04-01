@@ -31,6 +31,7 @@ export interface FormData {
     areaUnit?: string;
     price?: string;
     address?: string;
+    googleMapsLink?: string;
     locality?: string;
     localityId?: string;
     city?: string;

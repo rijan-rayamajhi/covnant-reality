@@ -7,19 +7,34 @@ export interface AdminProperty {
     description: string | null;
     listing_type: string;
     property_type: string;
+    commercial_type: string | null;
     price: number;
     area_sqft: number;
+    area_unit: string;
     bedrooms: number | null;
     bathrooms: number | null;
     furnishing: string | null;
+    facing: string | null;
+    floor: number | null;
+    total_floors: number | null;
+    possession_status: string | null;
     address: string;
     locality: string | null;
     city: string;
     state: string | null;
+    pincode: string | null;
+    landmark: string | null;
     status: "pending" | "approved" | "rejected" | "sold" | "rented";
     is_verified: boolean;
     is_featured: boolean;
     rera_number: string | null;
+    contact_number: string | null;
+    whatsapp_number: string | null;
+    allow_phone: boolean;
+    allow_whatsapp: boolean;
+    allow_chat: boolean;
+    amenities: string[];
+    media: { id: string; url: string; type: string }[];
     created_at: string;
     /* joined from profiles */
     owner_name: string | null;
@@ -170,6 +185,61 @@ export async function deleteAdminProperty(propertyId: string): Promise<{
     });
     if (error || !data) return { success: false, error };
     return { success: true, error: null };
+}
+
+/**
+ * Update editable property fields as admin.
+ */
+export async function updateAdminProperty(
+    propertyId: string,
+    updates: Partial<Omit<AdminProperty, "id" | "owner_id" | "owner_name" | "owner_role" | "created_at" | "media">>
+): Promise<{ success: boolean; error: string | null }> {
+    const { data, error } = await apiFetch<{ success: boolean }>("/api/admin/properties", {
+        method: "PATCH",
+        body: JSON.stringify({ propertyId, updates }),
+    });
+    if (error || !data) return { success: false, error };
+    return { success: true, error: null };
+}
+
+/**
+ * Delete a single property media item (image/video) from storage and DB.
+ */
+export async function deletePropertyMedia(
+    mediaId: string,
+    mediaUrl: string
+): Promise<{ success: boolean; error: string | null }> {
+    const { data, error } = await apiFetch<{ success: boolean }>("/api/admin/property-media", {
+        method: "DELETE",
+        body: JSON.stringify({ mediaId, mediaUrl }),
+    });
+    if (error || !data) return { success: false, error };
+    return { success: true, error: null };
+}
+
+/**
+ * Upload a new image/video file to a property.
+ * Returns the new media item { id, url, type } on success.
+ */
+export async function uploadPropertyMedia(
+    propertyId: string,
+    ownerId: string,
+    file: File,
+    mediaType: "image" | "video" | "floorplan" = "image"
+): Promise<{ media: { id: string; url: string; type: string } | null; error: string | null }> {
+    const fd = new FormData();
+    fd.append("propertyId", propertyId);
+    fd.append("ownerId", ownerId);
+    fd.append("mediaType", mediaType);
+    fd.append("file", file);
+    try {
+        const res = await fetch("/api/admin/property-media", { method: "POST", body: fd });
+        const json = await res.json();
+        if (!res.ok) return { media: null, error: json.error ?? `Upload failed (${res.status})` };
+        return { media: json.media, error: null };
+    } catch (err) {
+        return { media: null, error: (err as Error).message };
+    }
 }
 
 /* ── Users ─────────────────────────────────────────────────── */

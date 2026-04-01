@@ -4,12 +4,12 @@ import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
     DashboardSidebar,
-    DashboardTabs,
     SavedSection,
     SearchesSection,
     ProfileSection,
     DashboardSkeleton,
 } from "@/components/dashboard";
+import { Menu } from "lucide-react";
 import {
     fetchSavedProperties,
     fetchSavedSearches,
@@ -27,7 +27,6 @@ const VALID_TABS: DashboardTabId[] = ["saved", "searches", /* "visits", "alerts"
 function getTabFromParam(param: string | null): DashboardTabId {
     return VALID_TABS.includes(param as DashboardTabId) ? (param as DashboardTabId) : "saved";
 }
-
 function DashboardContent() {
     const searchParams = useSearchParams();
     const tabParam = searchParams.get("tab");
@@ -35,6 +34,7 @@ function DashboardContent() {
 
     const [activeTab, setActiveTab] = useState<DashboardTabId>(urlTab);
     const [lastTabParam, setLastTabParam] = useState(tabParam);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     // ─── Data state ─────────────────────────────────────────────────────────
     const [savedProperties, setSavedProperties] = useState<SavedPropertyRow[]>([]);
@@ -104,21 +104,29 @@ function DashboardContent() {
     // Removed upcoming bookings
 
     return (
-        <>
-            {/* Desktop Sidebar — rendered outside Container at the flex root */}
+        <div className="flex flex-1 min-h-screen bg-bg relative">
+            {/* Sidebar */}
             <DashboardSidebar
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
             />
 
             {/* Main content area */}
             <div className="flex-1 min-w-0 flex flex-col">
-                {/* Mobile / Tablet Tabs */}
-                <div className="lg:hidden border-b border-border bg-bg-card">
-                    <div className="px-4 sm:px-6">
-                        <DashboardTabs activeTab={activeTab} onTabChange={setActiveTab} />
-                    </div>
-                </div>
+                {/* Mobile Header */}
+                <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-border sticky top-0 z-30">
+                    <button
+                        onClick={() => setIsSidebarOpen(true)}
+                        className="p-2 -ml-2 text-text-secondary hover:text-text-primary transition-colors"
+                        aria-label="Open menu"
+                    >
+                        <Menu className="w-6 h-6" />
+                    </button>
+                    <span className="font-bold text-text-primary">Dashboard</span>
+                    <div className="w-10"></div> {/* Spacer for symmetry */}
+                </header>
 
                 {/* Tab Content */}
                 <div className="flex-1 px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 lg:py-10">
@@ -128,21 +136,12 @@ function DashboardContent() {
                     {activeTab === "searches" && (
                         <SearchesSection searches={savedSearches} loading={loading.searches} />
                     )}
-                    {/* {activeTab === "visits" && (
-                        <VisitsSection visits={siteVisits} loading={loading.visits} />
-                    )}
-                    {activeTab === "alerts" && (
-                        <AlertsSection alerts={alerts} loading={loading.alerts} />
-                    )}
-                    {activeTab === "bookings" && (
-                        <BookingsSection bookings={upcomingBookings} loading={loading.bookings} />
-                    )} */}
                     {activeTab === "profile" && (
                         <ProfileSection profile={profile} loading={loading.profile} />
                     )}
                 </div>
             </div>
-        </>
+        </div>
     );
 }
 

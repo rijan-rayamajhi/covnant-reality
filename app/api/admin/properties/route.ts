@@ -3,6 +3,17 @@ import { createClient } from "@/lib/supabase/server";
 import { verifyAdmin } from "@/lib/supabase/admin-auth";
 
 /**
+ * Converts a Supabase storage path to a full public URL.
+ * If the value is already a full URL (e.g. starts with http), it passes through unchanged.
+ */
+async function resolveMediaUrl(supabase: Awaited<ReturnType<typeof createClient>>, path: string): Promise<string> {
+    if (!path) return "";
+    if (path.startsWith("http") || path.startsWith("/")) return path;
+    const { data } = supabase.storage.from("property-media").getPublicUrl(path);
+    return data.publicUrl;
+}
+
+/**
  * GET /api/admin/properties?limit=20&offset=0
  * Fetch paginated properties with owner info.
  */
@@ -22,7 +33,8 @@ export async function GET(request: NextRequest) {
         .select(
             `
             *,
-            profiles!properties_owner_id_fkey ( full_name, role )
+            profiles!properties_owner_id_fkey ( full_name, role ),
+            property_media (*)
         `,
             { count: "exact" }
         )
@@ -33,33 +45,56 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const mapped = (data ?? []).map((row: Record<string, unknown>) => {
-        const profile = row.profiles as Record<string, unknown> | null;
+    const mapped = await Promise.all((data ?? []).map(async (row) => {
+        const profile = row.profiles as unknown as { full_name: string; role: string } | null;
+        const media = (row.property_media as unknown as { id: string; media_url: string; media_type: string }[]) || [];
+        const resolvedMedia = await Promise.all(
+            media.map(async (m) => ({
+                id: m.id,
+                url: await resolveMediaUrl(supabase, m.media_url),
+                type: m.media_type,
+            }))
+        );
         return {
-            id: row.id as string,
-            owner_id: row.owner_id as string,
-            title: row.title as string,
-            description: row.description as string | null,
-            listing_type: row.listing_type as string,
-            property_type: row.property_type as string,
-            price: row.price as number,
-            area_sqft: row.area_sqft as number,
-            bedrooms: row.bedrooms as number | null,
-            bathrooms: row.bathrooms as number | null,
-            furnishing: row.furnishing as string | null,
-            address: row.address as string,
-            locality: row.locality as string | null,
-            city: row.city as string,
-            state: row.state as string | null,
-            status: row.status as string,
-            is_verified: row.is_verified as boolean,
-            is_featured: row.is_featured as boolean,
-            rera_number: row.rera_number as string | null,
-            created_at: row.created_at as string,
-            owner_name: (profile?.full_name as string) ?? null,
-            owner_role: (profile?.role as string) ?? null,
+            id: row.id,
+            owner_id: row.owner_id,
+            title: row.title,
+            description: row.description,
+            listing_type: row.listing_type,
+            property_type: row.property_type,
+            commercial_type: row.commercial_type,
+            price: row.price,
+            area_sqft: row.area_sqft,
+            area_unit: row.area_unit || "sq ft",
+            bedrooms: row.bedrooms,
+            bathrooms: row.bathrooms,
+            furnishing: row.furnishing,
+            facing: row.facing,
+            floor: row.floor,
+            total_floors: row.total_floors,
+            possession_status: row.possession_status,
+            address: row.address,
+            locality: row.locality,
+            city: row.city,
+            state: row.state,
+            pincode: row.pincode,
+            landmark: row.landmark,
+            status: row.status,
+            is_verified: row.is_verified,
+            is_featured: row.is_featured,
+            rera_number: row.rera_number,
+            contact_number: row.contact_number,
+            whatsapp_number: row.whatsapp_number,
+            allow_phone: row.allow_phone,
+            allow_whatsapp: row.allow_whatsapp,
+            allow_chat: row.allow_chat,
+            amenities: row.amenities || [],
+            media: resolvedMedia,
+            created_at: row.created_at,
+            owner_name: profile?.full_name ?? null,
+            owner_role: profile?.role ?? null,
         };
-    });
+    }));
 
     return NextResponse.json({ data: mapped, totalCount: count ?? 0 });
 }
@@ -159,6 +194,58 @@ export async function DELETE(request: NextRequest) {
     const { error } = await supabase
         .from("properties")
         .delete()
+        .eq("id", propertyId);
+
+    if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+}
+
+/**
+ * PATCH /api/admin/properties
+ * Body: { propertyId: string, updates: Partial<property fields> }
+ */
+export async function PATCH(request: NextRequest) {
+    const { error: authError } = await verifyAdmin();
+    if (authError) {
+        return NextResponse.json({ error: authError }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { propertyId, updates } = body as {
+        propertyId: string;
+        updates: Record<string, unknown>;
+    };
+
+    if (!propertyId || !updates) {
+        return NextResponse.json({ error: "Missing propertyId or updates" }, { status: 400 });
+    }
+
+    // whitelist updatable fields
+    const ALLOWED_FIELDS = [
+        "title", "description", "listing_type", "property_type", "commercial_type",
+        "price", "area_sqft", "area_unit", "bedrooms", "bathrooms", "furnishing",
+        "facing", "floor", "total_floors", "possession_status",
+        "address", "locality", "city", "state", "pincode", "landmark",
+        "rera_number", "contact_number", "whatsapp_number",
+        "allow_phone", "allow_whatsapp", "allow_chat", "amenities",
+        "is_featured", "is_verified", "status"
+    ];
+
+    const safeUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([k]) => ALLOWED_FIELDS.includes(k))
+    );
+
+    if (Object.keys(safeUpdates).length === 0) {
+        return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+    const { error } = await supabase
+        .from("properties")
+        .update(safeUpdates)
         .eq("id", propertyId);
 
     if (error) {

@@ -33,27 +33,38 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
     return R * c; // Distance in km
 }
 
+// Simple session-level cache to avoid redundant Overpass/Geocoding calls
+const GLOBAL_CACHE: Record<string, unknown> = {};
+
 /**
- * Geocode an Indian pincode to lat/lon using Nominatim (OpenStreetMap).
+ * Geocode an Indian pincode or address to lat/lon using Nominatim (OpenStreetMap).
  */
-async function geocodePincode(
-    pincode: string
+async function geocodeLocation(
+    query: string,
+    isPincode = true
 ): Promise<{ lat: number; lon: number } | null> {
+    const cacheKey = `geo_${query}`;
+    if (GLOBAL_CACHE[cacheKey]) return GLOBAL_CACHE[cacheKey] as { lat: number; lon: number };
+
     try {
-        const res = await fetch(
-            `https://nominatim.openstreetmap.org/search?postalcode=${encodeURIComponent(pincode)}&country=India&format=json&limit=1`,
-            {
-                headers: { "User-Agent": "CovnantReality/1.0" },
-                signal: AbortSignal.timeout(5000),
-            }
-        );
+        const url = isPincode 
+            ? `https://nominatim.openstreetmap.org/search?postalcode=${encodeURIComponent(query)}&country=India&format=json&limit=1`
+            : `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&country=India&format=json&limit=1`;
+            
+        const res = await fetch(url, {
+            headers: { "User-Agent": "CovnantReality/1.1" },
+            signal: AbortSignal.timeout(6000),
+        });
         if (!res.ok) return null;
         const data = await res.json();
         if (!data || data.length === 0) return null;
         const lat = parseFloat(data[0].lat);
         const lon = parseFloat(data[0].lon);
         if (isNaN(lat) || isNaN(lon)) return null;
-        return { lat, lon };
+
+        const result = { lat, lon };
+        GLOBAL_CACHE[cacheKey] = result;
+        return result;
     } catch {
         return null;
     }
@@ -72,46 +83,62 @@ interface OverpassElement {
 export function NearbySection({ latitude, longitude, pincode }: NearbySectionProps) {
     const [fetchedPlaces, setFetchedPlaces] = useState<NearbyPlace[] | null>(null);
     const [resolvedCoords, setResolvedCoords] = useState<{ lat: number; lon: number } | null>(null);
-    const [geocoding, setGeocoding] = useState(false);
+    const [status, setStatus] = useState<"idle" | "geocoding" | "fetching" | "success" | "error">("idle");
 
     const hasDirectCoords = !!latitude && !!longitude;
     const hasPincode = !!pincode && pincode.trim().length > 0;
 
-    // Step 1: If no direct coords but pincode is available, geocode it
+    // Step 1: Geocode if direct coords are missing
     useEffect(() => {
-        if (hasDirectCoords || !hasPincode) return;
-
         let isMounted = true;
-        
+        if (hasDirectCoords || !hasPincode) {
+            if (hasDirectCoords) {
+                // Defer to avoid "synchronous setState in effect" lint error
+                Promise.resolve().then(() => {
+                    if (isMounted) setStatus("fetching");
+                });
+            }
+            return;
+        }
+
         const fetchGeocode = async () => {
-            // Await a microtask to avoid "setState synchronously in effect" warning
             await Promise.resolve();
             if (isMounted) {
-                setGeocoding(true);
+                setStatus("geocoding");
             }
-            
-            const coords = await geocodePincode(pincode!);
+            const coords = await geocodeLocation(pincode!);
             if (isMounted) {
                 setResolvedCoords(coords);
-                setGeocoding(false);
+                if (coords) setStatus("fetching");
+                else setStatus("error");
             }
         };
 
         fetchGeocode();
-
         return () => { isMounted = false; };
     }, [hasDirectCoords, hasPincode, pincode]);
 
-    // Determine the final coordinates to use
     const finalLat = latitude ?? resolvedCoords?.lat ?? null;
     const finalLon = longitude ?? resolvedCoords?.lon ?? null;
     const hasCoords = !!finalLat && !!finalLon;
 
-    // Step 2: Fetch nearby places using final coordinates
+    // Step 2: Fetch nearby places using Overpass
     useEffect(() => {
         if (!hasCoords || !finalLat || !finalLon) return;
 
+        const cacheKey = `overpass_${finalLat.toFixed(4)}_${finalLon.toFixed(4)}`;
         let isMounted = true;
+        if (GLOBAL_CACHE[cacheKey]) {
+            // Defer to avoid "synchronous setState in effect" lint error
+            const data = GLOBAL_CACHE[cacheKey] as NearbyPlace[];
+            Promise.resolve().then(() => {
+                if (isMounted) {
+                    setFetchedPlaces(data);
+                    setStatus("success");
+                }
+            });
+            return;
+        }
 
         const fetchWithRetry = async (query: string) => {
             const endpoints = [
@@ -124,28 +151,29 @@ export function NearbySection({ latitude, longitude, pincode }: NearbySectionPro
             for (const endpoint of endpoints) {
                 try {
                     const response = await fetch(`${endpoint}?data=${encodeURIComponent(query)}`, {
-                        signal: AbortSignal.timeout(10000) // 10s timeout
+                        signal: AbortSignal.timeout(15000)
                     });
                     if (response.ok) return await response.json();
-                    lastError = new Error(`Overpass ${endpoint} returned ${response.status}`);
+                    lastError = new Error(`Overpass returned ${response.status}`);
                 } catch (err) {
                     lastError = err as Error;
                 }
             }
-            throw lastError || new Error("All Overpass endpoints failed");
+            throw lastError || new Error("Endpoints failed");
         };
 
         const loadNearby = async () => {
             try {
-                const radius = 5000;
+                // Radius strategy: Start with 40km to ensure "Always Works" (per user request)
+                const radius = 40000;
                 const query = `
-                    [out:json][timeout:25];
+                    [out:json][timeout:35];
                     (
-                      nwr["railway"="station"](around:${radius}, ${finalLat}, ${finalLon});
-                      nwr["station"="subway"](around:${radius}, ${finalLat}, ${finalLon});
-                      nwr["amenity"~"school|college|university"](around:${radius}, ${finalLat}, ${finalLon});
+                      nwr["railway"~"station|halt|platform"](around:${radius}, ${finalLat}, ${finalLon});
+                      nwr["station"~"subway|railway"](around:${radius}, ${finalLat}, ${finalLon});
+                      nwr["amenity"~"school|college|university|hospital"](around:${radius}, ${finalLat}, ${finalLon});
+                      nwr["shop"~"mall|department_store|supermarket"](around:${radius}, ${finalLat}, ${finalLon});
                       nwr["amenity"="hospital"](around:${radius}, ${finalLat}, ${finalLon});
-                      nwr["shop"~"mall|department_store"](around:${radius}, ${finalLat}, ${finalLon});
                     );
                     out center;
                 `;
@@ -156,10 +184,10 @@ export function NearbySection({ latitude, longitude, pincode }: NearbySectionPro
                 const findNearest = (category: string) => {
                     const filtered = elements.filter((el) => {
                         const t = el.tags || {};
-                        if (category === "transport") return t.railway === "station" || t.station === "subway";
+                        if (category === "transport") return t.railway === "station" || t.railway === "halt" || t.station === "subway" || t.station === "railway";
                         if (category === "education") return ["school", "college", "university"].includes(t.amenity || "");
                         if (category === "health") return t.amenity === "hospital";
-                        if (category === "shopping") return t.shop === "mall" || t.shop === "department_store";
+                        if (category === "shopping") return t.shop === "mall" || t.shop === "department_store" || t.shop === "supermarket";
                         return false;
                     });
 
@@ -178,19 +206,24 @@ export function NearbySection({ latitude, longitude, pincode }: NearbySectionPro
                 };
 
                 if (isMounted) {
-                    setFetchedPlaces(TEMPLATES.map(t => {
+                    const processed = TEMPLATES.map(t => {
                         const nearest = findNearest(t.category);
-                        if (!nearest) return { ...t, name: "Not found nearby", distance: "N/A", loading: false };
+                        if (!nearest) return { ...t, name: "Searching wider...", distance: "N/A", loading: false };
                         const name = nearest.tags?.name || nearest.tags?.brand || t.label.split(" / ")[0];
                         const distKm = nearest.dist || 0;
                         const distanceLabel = distKm < 1 ? `${Math.round(distKm * 1000)}m` : `${distKm.toFixed(1)}km`;
                         return { ...t, name, distance: distanceLabel, loading: false };
-                    }));
+                    });
+
+                    GLOBAL_CACHE[cacheKey] = processed;
+                    setFetchedPlaces(processed);
+                    setStatus("success");
                 }
             } catch (error) {
-                console.error("Error fetching nearby data:", error);
+                console.error("Nearby load failed:", error);
                 if (isMounted) {
-                    setFetchedPlaces(TEMPLATES.map(p => ({ ...p, loading: false, distance: "Unavailable", name: "Could not load" })));
+                    setStatus("error");
+                    setFetchedPlaces(TEMPLATES.map(p => ({ ...p, loading: false, distance: "Unavailable", name: "Network error" })));
                 }
             }
         };
@@ -200,12 +233,12 @@ export function NearbySection({ latitude, longitude, pincode }: NearbySectionPro
     }, [hasCoords, finalLat, finalLon]);
 
     const nearbyPlaces = useMemo(() => {
-        if (!hasCoords && !geocoding && !hasPincode) {
-            return TEMPLATES.map(t => ({ ...t, name: "No location data", distance: "N/A", loading: false }));
+        if (status === "idle" && !hasCoords && !hasPincode) {
+            return TEMPLATES.map(t => ({ ...t, name: "No location info", distance: "N/A", loading: false }));
         }
         if (fetchedPlaces) return fetchedPlaces;
-        return TEMPLATES.map(t => ({ ...t, name: "Nearby", distance: "calculating...", loading: true }));
-    }, [hasCoords, geocoding, hasPincode, fetchedPlaces]);
+        return TEMPLATES.map(t => ({ ...t, name: status === "geocoding" ? "Locating..." : "Nearby", distance: "calculating...", loading: true }));
+    }, [status, hasCoords, hasPincode, fetchedPlaces]);
 
     return (
         <section className="py-6 border-b border-border bg-bg-card">

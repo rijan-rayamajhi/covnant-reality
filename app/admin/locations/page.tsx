@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { State, City, Locality, getStates, getCitiesByState, getLocalitiesByCity } from "@/lib/api/locations";
-import { Trash2, Plus, AlertCircle, Loader2 } from "lucide-react";
+import { Trash2, Plus, AlertCircle, Loader2, Search } from "lucide-react";
 
 export default function AdminLocationsPage() {
     const supabase = createClient();
@@ -22,6 +22,10 @@ export default function AdminLocationsPage() {
     const [newCityName, setNewCityName] = useState("");
     const [newLocalityName, setNewLocalityName] = useState("");
     const [newLocalityPincode, setNewLocalityPincode] = useState("");
+
+    // Search/Filter states
+    const [citySearch, setCitySearch] = useState("");
+    const [localitySearch, setLocalitySearch] = useState("");
 
     useEffect(() => {
         loadStates();
@@ -204,9 +208,24 @@ export default function AdminLocationsPage() {
                                 </button>
                             </form>
 
-                            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                                {cities.length === 0 && <p className="text-sm text-text-muted italic">No cities found.</p>}
-                                {cities.map(city => (
+                            <div className="relative mb-4">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                                <input
+                                    type="text"
+                                    placeholder="Search existing cities..."
+                                    value={citySearch}
+                                    onChange={e => setCitySearch(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                                />
+                            </div>
+
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+                                {cities.filter(c => c.name.toLowerCase().includes(citySearch.toLowerCase())).length === 0 && (
+                                    <p className="text-sm text-text-muted italic text-center py-4">No matching cities.</p>
+                                )}
+                                {cities
+                                    .filter(c => c.name.toLowerCase().includes(citySearch.toLowerCase()))
+                                    .map(city => (
                                     <div key={city.id} className="flex items-center gap-2">
                                         <button
                                             onClick={() => setSelectedCity(city.id)}
@@ -260,9 +279,30 @@ export default function AdminLocationsPage() {
                                 </div>
                             </form>
 
-                            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                                {localities.length === 0 && <p className="text-sm text-text-muted italic">No localities found.</p>}
-                                {localities.map(loc => (
+                            <div className="relative mb-4">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                                <input
+                                    type="text"
+                                    placeholder="Search localities/pincode..."
+                                    value={localitySearch}
+                                    onChange={e => setLocalitySearch(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                                />
+                            </div>
+
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+                                {localities.filter(l => 
+                                    l.name.toLowerCase().includes(localitySearch.toLowerCase()) || 
+                                    l.pincode.includes(localitySearch)
+                                ).length === 0 && (
+                                    <p className="text-sm text-text-muted italic text-center py-4">No matching localities.</p>
+                                )}
+                                {localities
+                                    .filter(l => 
+                                        l.name.toLowerCase().includes(localitySearch.toLowerCase()) || 
+                                        l.pincode.includes(localitySearch)
+                                    )
+                                    .map(loc => (
                                     <div key={loc.id} className="flex items-center justify-between px-4 py-2.5 rounded-xl border border-border bg-slate-50 gap-2">
                                         <div className="min-w-0 flex-1">
                                             <p className="text-sm font-medium text-text-primary truncate">{loc.name}</p>

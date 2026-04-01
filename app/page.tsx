@@ -7,7 +7,7 @@ import { PremiumProperties } from "@/components/ui/PremiumProperties";
 import { RecommendedForYou } from "@/components/ui/RecommendedForYou";
 import { VerifiedProperties } from "@/components/ui/VerifiedProperties";
 import { AffordableRentals } from "@/components/ui/AffordableRentals";
-import { FeaturedProjects } from "@/components/ui/FeaturedProjects";
+// import { FeaturedProjects } from "@/components/ui/FeaturedProjects";
 import { TrustSection } from "@/components/ui/TrustSection";
 // import { TopAgents } from "@/components/ui/TopAgents";
 import { Testimonials } from "@/components/ui/Testimonials";
@@ -40,7 +40,7 @@ export default function HomePage() {
       <AffordableRentals />
 
       {/* 8. Featured Projects */}
-      <FeaturedProjects />
+      {/* <FeaturedProjects /> */}
 
       {/* 9. Trending Locations */}
       {/* <TrendingLocations /> */}

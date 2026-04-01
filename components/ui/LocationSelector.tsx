@@ -198,11 +198,24 @@ export function LocationSelector({
 
                 {/* Title */}
                 <div className="px-5 pb-3 md:pt-2">
-                    <h2 className="text-xl font-semibold text-text-primary">
-                        {step === "STATE" && "Select State"}
-                        {step === "CITY" && `Select City in ${tempState?.name}`}
-                        {step === "LOCALITY" && `Select Locality in ${tempCity?.name}`}
-                    </h2>
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-semibold text-text-primary">
+                            {step === "STATE" && "Select State"}
+                            {step === "CITY" && `Select City in ${tempState?.name}`}
+                            {step === "LOCALITY" && `Select Locality in ${tempCity?.name}`}
+                        </h2>
+                        {Object.keys(selectedLocation).length > 0 && (
+                            <button
+                                onClick={() => {
+                                    onSelect({});
+                                    onClose();
+                                }}
+                                className="text-xs font-medium text-primary hover:text-primary-hover underline underline-offset-2 transition-colors"
+                            >
+                                Clear All
+                            </button>
+                        )}
+                    </div>
                     <p className="text-sm text-text-muted mt-0.5">
                         {step === "STATE" && "Choose your preferred state from available regions."}
                         {step === "CITY" && "Choose a city to explore properties."}
@@ -220,13 +233,21 @@ export function LocationSelector({
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className={cn(
-                                "w-full h-11 pl-10 pr-4 text-sm bg-slate-50 border border-slate-200 rounded-xl",
+                                "w-full h-11 pl-10 pr-10 text-sm bg-slate-50 border border-slate-200 rounded-xl",
                                 "placeholder:text-slate-400",
                                 "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30",
                                 "transition-all duration-200"
                             )}
                             autoFocus
                         />
+                        {search && (
+                            <button
+                                onClick={() => setSearch("")}
+                                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-200 rounded-full transition-colors text-slate-400 hover:text-slate-600"
+                            >
+                                <X className="h-3.5 w-3.5" />
+                            </button>
+                        )}
                     </div>
                 </div>
 

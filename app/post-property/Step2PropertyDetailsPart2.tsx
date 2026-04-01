@@ -193,13 +193,22 @@ export function Step2PropertyDetailsPart2({ formData, updateFormData }: Step2Pro
             <div className="flex flex-col gap-6 md:gap-8">
 
                 {/* 6. Address */}
-                <Input
-                    label="Address / Property Location"
-                    type="text"
-                    placeholder="e.g., Flat 402, Green Valley Apts"
-                    value={formData.address || ""}
-                    onChange={(e) => updateFormData({ address: e.target.value })}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                    <Input
+                        label="Address / Property Location *"
+                        type="text"
+                        placeholder="e.g., Flat 402, Green Valley Apts"
+                        value={formData.address || ""}
+                        onChange={(e) => updateFormData({ address: e.target.value })}
+                    />
+                    <Input
+                        label="Google Maps Pin Link (Optional)"
+                        type="url"
+                        placeholder="e.g., https://maps.app.goo.gl/..."
+                        value={formData.googleMapsLink || ""}
+                        onChange={(e) => updateFormData({ googleMapsLink: e.target.value })}
+                    />
+                </div>
 
                 {/* State + City 2-col on md */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">

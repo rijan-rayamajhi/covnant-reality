@@ -12,6 +12,7 @@ export interface PropertyFormData {
     areaUnit?: string;
     price?: string;
     address?: string;
+    googleMapsLink?: string;
     locality?: string;
     localityId?: string;
     city?: string;
@@ -275,8 +276,43 @@ export async function submitProperty(
     }
 
     const propertyId: string = rpcData.property_id;
+    
+    // 2. Geocode map link or pincode → lat/lon and update the property row
+    const processGeocoding = async () => {
+        let coords: { latitude: number; longitude: number } | null = null;
+        
+        if (formData.googleMapsLink) {
+            try {
+                // Ensure this fetch runs safely in the browser context to the internal Next.js API route
+                const apiUrl = typeof window !== "undefined" ? "/api/parse-map-link" : (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000") + "/api/parse-map-link";
+                const res = await fetch(apiUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ link: formData.googleMapsLink })
+                });
+                if (res.ok) {
+                    coords = await res.json();
+                }
+            } catch (error) {
+                console.error("Failed to extract map link coordinates:", error);
+            }
+        }
 
-    // 2. Upload all media files
+        if (!coords && formData.pincode) {
+            coords = await geocodePincode(formData.pincode);
+        }
+
+        if (coords) {
+            await supabase
+                .from("properties")
+                .update({ latitude: coords.latitude, longitude: coords.longitude })
+                .eq("id", propertyId);
+        }
+    };
+
+    processGeocoding();
+
+    // 3. Upload all media files
     const photos = formData.photos ?? [];
     const videos = formData.videos ?? [];
     const floorPlans = formData.floorPlans ?? [];
@@ -329,17 +365,39 @@ export async function submitAdminProperty(
 
     const propertyId: string = rpcData.property_id;
 
-    // 2. Geocode pincode → lat/lon and update the property row
-    if (formData.pincode) {
-        geocodePincode(formData.pincode).then(async (coords) => {
-            if (coords) {
-                await supabase
-                    .from("properties")
-                    .update({ latitude: coords.latitude, longitude: coords.longitude })
-                    .eq("id", propertyId);
+    // 2. Geocode map link or pincode → lat/lon and update the property row
+    const processGeocoding = async () => {
+        let coords: { latitude: number; longitude: number } | null = null;
+        
+        if (formData.googleMapsLink) {
+            try {
+                const apiUrl = typeof window !== "undefined" ? "/api/parse-map-link" : (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000") + "/api/parse-map-link";
+                const res = await fetch(apiUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ link: formData.googleMapsLink })
+                });
+                if (res.ok) {
+                    coords = await res.json();
+                }
+            } catch (error) {
+                console.error("Failed to extract map link coordinates:", error);
             }
-        });
-    }
+        }
+
+        if (!coords && formData.pincode) {
+            coords = await geocodePincode(formData.pincode);
+        }
+
+        if (coords) {
+            await supabase
+                .from("properties")
+                .update({ latitude: coords.latitude, longitude: coords.longitude })
+                .eq("id", propertyId);
+        }
+    };
+
+    processGeocoding();
 
     // 3. Upload all media files using targetOwnerId so paths match ownership
     const photos = formData.photos ?? [];

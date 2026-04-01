@@ -14,6 +14,7 @@ import {
     type AdminProperty,
 } from "@/lib/supabase/admin";
 import { PropertyDetailModal } from "@/components/admin/PropertyDetailModal";
+import { EditListingModal } from "@/components/admin/EditListingModal";
 
 type TabType = "all" | "pending" | "approved" | "rejected";
 
@@ -29,6 +30,8 @@ export default function PropertyModerationPage() {
     const [error, setError] = useState<string | null>(null);
     const [selectedProperty, setSelectedProperty] = useState<AdminProperty | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [selectedEditProperty, setSelectedEditProperty] = useState<AdminProperty | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     const tabs = [
         { id: "all", label: "All Properties" },
@@ -123,6 +126,11 @@ export default function PropertyModerationPage() {
         setIsDetailModalOpen(true);
     };
 
+    const handleEdit = (property: AdminProperty) => {
+        setSelectedEditProperty(property);
+        setIsEditModalOpen(true);
+    };
+
     const filteredProperties = properties.filter((property) => {
         if (activeTab === "all") return true;
         if (activeTab === "pending" && property.status === "pending") return true;
@@ -211,6 +219,7 @@ export default function PropertyModerationPage() {
                         onApprove={handleApprove}
                         onReject={handleReject}
                         onDelete={handleDelete}
+                        onEdit={handleEdit}
                         onViewDetails={handleViewDetails}
                         actionLoading={actionLoading}
                     />
@@ -228,6 +237,12 @@ export default function PropertyModerationPage() {
                 isOpen={isDetailModalOpen}
                 onClose={() => setIsDetailModalOpen(false)}
                 property={selectedProperty}
+            />
+            <EditListingModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                property={selectedEditProperty}
+                onSaved={handleRefresh}
             />
         </div>
     );

@@ -19,7 +19,8 @@ import {
     LogOut,
     MapPin,
     User,
-    FileKey
+    FileKey,
+    Settings2
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -32,6 +33,7 @@ const navItems = [
     { label: "Property Moderation", href: "/admin/properties", icon: Building2 },
     { label: "Floor Plan Requests", href: "/admin/floor-plan-requests", icon: FileKey },
     { label: "Location Management", href: "/admin/locations", icon: MapPin },
+    { label: "Search Categories", href: "/admin/categories", icon: Settings2 },
     { label: "Lead Monitoring", href: "/admin/leads", icon: Target },
     { label: "Site Visits", href: "/admin/visits", icon: CalendarDays },
     { label: "Payments", href: "/admin/payments", icon: CreditCard },
