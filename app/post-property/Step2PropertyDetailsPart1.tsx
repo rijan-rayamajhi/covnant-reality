@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
 import { FormData } from "./PostPropertyContent";
+import { fetchSearchCategories } from "@/lib/supabase/homepage";
+import { SearchCategory } from "@/types";
 
 interface Step2PropertyDetailsPart1Props {
     formData: FormData;
@@ -10,13 +12,6 @@ interface Step2PropertyDetailsPart1Props {
     showErrors?: boolean;
 }
 
-const PROPERTY_TYPES = [
-    "Apartment",
-    "House",
-    "Villa",
-    "Plot",
-    "Commercial",
-];
 
 const BHK_OPTIONS = [
     "1 BHK",
@@ -26,27 +21,63 @@ const BHK_OPTIONS = [
     "5+ BHK",
 ];
 
-const COMMERCIAL_TYPES = [
-    "Office",
-    "Retail Shop",
-    "Warehouse",
-    "Industrial Land",
-    "Showroom",
-    "Commercial Plot",
-    "Co-working Space",
-    "Hotel",
-    "Other",
-];
 
 export function Step2PropertyDetailsPart1({ formData, updateFormData, showErrors }: Step2PropertyDetailsPart1Props) {
-    // Local state for dropdown toggles (using simple custom selects for consistent styling)
-    const [isTypeOpen, setIsTypeOpen] = useState(false);
+    // Local state for dropdown toggles
+    const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+    const [isSubtypeOpen, setIsSubtypeOpen] = useState(false);
     const [isBhkOpen, setIsBhkOpen] = useState(false);
-    const [isCommercialTypeOpen, setIsCommercialTypeOpen] = useState(false);
 
-    const handleSelectType = (type: string) => {
-        updateFormData({ propertyType: type, ...(type !== "Commercial" ? { commercialType: undefined } : {}) });
-        setIsTypeOpen(false);
+    const [categories, setCategories] = useState<SearchCategory[]>([]);
+    const [loadingCategories, setLoadingCategories] = useState(true);
+
+    useEffect(() => {
+        async function loadCategories() {
+            setLoadingCategories(true);
+            try {
+                const data = await fetchSearchCategories();
+                setCategories(data);
+            } catch (err) {
+                console.error("Failed to load categories:", err);
+            } finally {
+                setLoadingCategories(false);
+            }
+        }
+        loadCategories();
+    }, []);
+
+    const handleSelectCategory = (cat: SearchCategory) => {
+        // Map to backward compatible propertyType
+        let propertyType = "apartment";
+        if (cat.slug === "commercial") propertyType = "commercial";
+        else if (cat.slug === "residential") propertyType = "apartment";
+
+        updateFormData({
+            searchCategoryId: cat.id,
+            propertyType: propertyType,
+            searchSubtypeId: undefined, // Reset subtype when category changes
+            commercialType: undefined // Reset commercial type
+        });
+        setIsCategoryOpen(false);
+    };
+
+    const handleSelectSubtype = (subId: string, subName: string) => {
+        const updates: Partial<FormData> = { searchSubtypeId: subId };
+
+        // Backward compatibility mapping
+        const category = categories.find(c => c.id === formData.searchCategoryId);
+        if (category?.slug === "commercial") {
+            updates.commercialType = subName;
+        } else {
+            // Map residential subtypes to propertyType
+            if (subName.toLowerCase().includes("apartment") || subName.toLowerCase().includes("flat")) updates.propertyType = "Apartment";
+            else if (subName.toLowerCase().includes("house")) updates.propertyType = "House";
+            else if (subName.toLowerCase().includes("villa")) updates.propertyType = "Villa";
+            else if (subName.toLowerCase().includes("land") || subName.toLowerCase().includes("plot")) updates.propertyType = "Plot";
+        }
+
+        updateFormData(updates);
+        setIsSubtypeOpen(false);
     };
 
     const handleSelectBhk = (bhk: string) => {
@@ -54,10 +85,11 @@ export function Step2PropertyDetailsPart1({ formData, updateFormData, showErrors
         setIsBhkOpen(false);
     };
 
-    const handleSelectCommercialType = (commercialType: string) => {
-        updateFormData({ commercialType });
-        setIsCommercialTypeOpen(false);
-    };
+    const selectedCategory = categories.find(c => c.id === formData.searchCategoryId);
+    const selectedSubtype = selectedCategory?.subtypes.find(s => s.id === formData.searchSubtypeId);
+
+    // Filter to hide BHK for Land/Plot or Commercial categories
+    const hideBHK = formData.propertyType === "Plot" || (selectedCategory?.slug === "commercial");
 
     return (
         <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -112,49 +144,99 @@ export function Step2PropertyDetailsPart1({ formData, updateFormData, showErrors
                     </div>
                 </div>
 
-                {/* 2. Property Type + 3. BHK — 2-col on md */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                    {/* 2. Property Type */}
+                {/* 2. Search Category + 3. Property Sub-type — 2-col on md */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 relative z-[40]">
+                    {/* 2. Property Category */}
                     <div className="flex flex-col gap-2 relative z-20">
+                        <label className="text-sm font-medium text-text-primary">
+                            Property Category
+                        </label>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (loadingCategories) return;
+                                setIsCategoryOpen(!isCategoryOpen);
+                                setIsSubtypeOpen(false);
+                                setIsBhkOpen(false);
+                            }}
+                            className={cn(
+                                "flex items-center justify-between w-full h-12 px-4 bg-white border rounded-xl text-left transition-colors",
+                                isCategoryOpen ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/50",
+                                !formData.searchCategoryId && "text-text-muted"
+                            )}
+                        >
+                            <span className="flex items-center gap-2">
+                                {loadingCategories && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
+                                {selectedCategory?.name || "Select category"}
+                            </span>
+                            <ChevronDown className={cn("w-4 h-4 text-text-muted transition-transform", isCategoryOpen && "rotate-180")} />
+                        </button>
+                        {isCategoryOpen && categories.length > 0 && (
+                            <div className="absolute top-[76px] left-0 w-full bg-white border border-border rounded-xl shadow-lg overflow-hidden py-1 z-30">
+                                {categories.map((cat) => (
+                                    <button
+                                        key={cat.id}
+                                        type="button"
+                                        onClick={() => handleSelectCategory(cat)}
+                                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors"
+                                    >
+                                        {cat.name}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        {showErrors && !formData.searchCategoryId && (
+                            <p className="text-xs text-danger mt-1">Please select a property category.</p>
+                        )}
+                    </div>
+
+                    {/* 3. Property Sub-type */}
+                    <div className="flex flex-col gap-2 relative z-10">
                         <label className="text-sm font-medium text-text-primary">
                             Property Type
                         </label>
                         <button
                             type="button"
                             onClick={() => {
-                                setIsTypeOpen(!isTypeOpen);
+                                if (!formData.searchCategoryId) return;
+                                setIsSubtypeOpen(!isSubtypeOpen);
+                                setIsCategoryOpen(false);
                                 setIsBhkOpen(false);
                             }}
+                            disabled={!formData.searchCategoryId}
                             className={cn(
                                 "flex items-center justify-between w-full h-12 px-4 bg-white border rounded-xl text-left transition-colors",
-                                isTypeOpen ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/50",
-                                !formData.propertyType && "text-text-muted"
+                                isSubtypeOpen ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/50",
+                                !formData.searchSubtypeId && "text-text-muted",
+                                !formData.searchCategoryId && "bg-slate-50 opacity-60 cursor-not-allowed"
                             )}
                         >
-                            <span>{formData.propertyType || "Select property type"}</span>
-                            <ChevronDown className={cn("w-4 h-4 text-text-muted transition-transform", isTypeOpen && "rotate-180")} />
+                            <span>{selectedSubtype?.name || "Select type"}</span>
+                            <ChevronDown className={cn("w-4 h-4 text-text-muted transition-transform", isSubtypeOpen && "rotate-180")} />
                         </button>
-                        {isTypeOpen && (
+                        {isSubtypeOpen && selectedCategory && (
                             <div className="absolute top-[76px] left-0 w-full bg-white border border-border rounded-xl shadow-lg overflow-hidden py-1 z-30">
-                                {PROPERTY_TYPES.map((type) => (
+                                {selectedCategory.subtypes.map((sub) => (
                                     <button
-                                        key={type}
+                                        key={sub.id}
                                         type="button"
-                                        onClick={() => handleSelectType(type)}
+                                        onClick={() => handleSelectSubtype(sub.id, sub.name)}
                                         className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors"
                                     >
-                                        {type}
+                                        {sub.name}
                                     </button>
                                 ))}
                             </div>
                         )}
-                        {showErrors && !formData.propertyType && (
-                            <p className="text-xs text-danger mt-1">Please select a property type.</p>
+                        {showErrors && !formData.searchSubtypeId && (
+                            <p className="text-xs text-danger mt-1">Please select a specific property type.</p>
                         )}
                     </div>
+                </div> {/* end Category + Subtype 2-col grid */}
 
-                    {/* 3. BHK (Custom Dropdown) */}
-                    <div className="flex flex-col gap-2 relative z-10">
+                {/* 3. BHK — Only visible for residential/non-land types */}
+                {!hideBHK && (
+                    <div className="flex flex-col gap-2 relative z-[30]">
                         <label className="text-sm font-medium text-text-primary">
                             BHK Type
                         </label>
@@ -162,21 +244,16 @@ export function Step2PropertyDetailsPart1({ formData, updateFormData, showErrors
                             type="button"
                             onClick={() => {
                                 setIsBhkOpen(!isBhkOpen);
-                                setIsTypeOpen(false);
+                                setIsCategoryOpen(false);
+                                setIsSubtypeOpen(false);
                             }}
-                            disabled={formData.propertyType === "Plot" || formData.propertyType === "Commercial"}
                             className={cn(
                                 "flex items-center justify-between w-full h-12 px-4 bg-white border rounded-xl text-left transition-colors",
                                 isBhkOpen ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/50",
-                                (!formData.bhk || formData.propertyType === "Plot" || formData.propertyType === "Commercial") && "text-text-muted",
-                                (formData.propertyType === "Plot" || formData.propertyType === "Commercial") && "bg-slate-50 opacity-60 cursor-not-allowed"
+                                !formData.bhk && "text-text-muted"
                             )}
                         >
-                            <span>
-                                {formData.propertyType === "Plot" || formData.propertyType === "Commercial"
-                                    ? "Not applicable"
-                                    : formData.bhk || "Select BHK"}
-                            </span>
+                            <span>{formData.bhk || "Select BHK"}</span>
                             <ChevronDown className={cn("w-4 h-4 text-text-muted transition-transform", isBhkOpen && "rotate-180")} />
                         </button>
                         {isBhkOpen && (
@@ -194,52 +271,10 @@ export function Step2PropertyDetailsPart1({ formData, updateFormData, showErrors
                             </div>
                         )}
                     </div>
-                </div> {/* end PropertyType + BHK 2-col grid */}
-
-                {/* Commercial Property Type (visible only when Commercial is selected) */}
-                {formData.propertyType === "Commercial" && (
-                    <div className="flex flex-col gap-2 relative z-10">
-                        <label className="text-sm font-medium text-text-primary">
-                            Commercial Property Type
-                        </label>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setIsCommercialTypeOpen(!isCommercialTypeOpen);
-                                setIsTypeOpen(false);
-                                setIsBhkOpen(false);
-                            }}
-                            className={cn(
-                                "flex items-center justify-between w-full h-12 px-4 bg-white border rounded-xl text-left transition-colors",
-                                isCommercialTypeOpen ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/50",
-                                !formData.commercialType && "text-text-muted"
-                            )}
-                        >
-                            <span>{formData.commercialType || "Select commercial type"}</span>
-                            <ChevronDown className={cn("w-4 h-4 text-text-muted transition-transform", isCommercialTypeOpen && "rotate-180")} />
-                        </button>
-                        {isCommercialTypeOpen && (
-                            <div className="absolute top-[76px] left-0 w-full bg-white border border-border rounded-xl shadow-lg overflow-hidden py-1 z-30">
-                                {COMMERCIAL_TYPES.map((ct) => (
-                                    <button
-                                        key={ct}
-                                        type="button"
-                                        onClick={() => handleSelectCommercialType(ct)}
-                                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors"
-                                    >
-                                        {ct}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                        {showErrors && !formData.commercialType && (
-                            <p className="text-xs text-danger mt-1">Please select a commercial property type.</p>
-                        )}
-                    </div>
                 )}
 
                 {/* 4. Area + 5. Price + 6. Bathrooms */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 relative z-[20]">
                     {/* 4. Area (Input) */}
                     <div className="relative">
                         <Input
@@ -265,7 +300,7 @@ export function Step2PropertyDetailsPart1({ formData, updateFormData, showErrors
                             className="h-12 pr-20"
                         />
                         {showErrors && !formData.area && (
-                            <p className="text-xs text-danger mt-1">Please enter the built-up area.</p>
+                            <p className="text-xs text-danger mt-1">Please enter the area.</p>
                         )}
                     </div>
 

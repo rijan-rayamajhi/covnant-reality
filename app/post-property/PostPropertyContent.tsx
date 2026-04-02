@@ -58,6 +58,8 @@ export interface FormData {
     allowChat?: boolean;
     contactNumber?: string;
     whatsappNumber?: string;
+    searchCategoryId?: string;
+    searchSubtypeId?: string;
 }
 
 /* ── Reverse-map DB values to form values ──────────────────── */
@@ -121,6 +123,8 @@ function mapPropertyToFormData(property: PropertyEditData): FormData {
         allowChat: property.allow_chat ?? true,
         contactNumber: property.contact_number ?? undefined,
         whatsappNumber: property.whatsapp_number ?? undefined,
+        searchCategoryId: property.search_category_id ?? undefined,
+        searchSubtypeId: property.search_subtype_id ?? undefined,
         // photos/videos are not loaded back — they exist in DB already
     };
 }

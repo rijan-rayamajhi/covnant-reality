@@ -39,6 +39,8 @@ export interface PropertyFormData {
     allowChat?: boolean;
     contactNumber?: string;
     whatsappNumber?: string;
+    searchCategoryId?: string;
+    searchSubtypeId?: string;
 }
 
 export interface ValidationResult {
@@ -202,6 +204,8 @@ export function mapFormDataToRpcPayload(formData: PropertyFormData) {
         allow_phone: formData.allowPhone ?? true,
         allow_whatsapp: formData.allowWhatsApp ?? true,
         amenities: formData.amenities ?? [],
+        search_category_id: formData.searchCategoryId ?? null,
+        search_subtype_id: formData.searchSubtypeId ?? null,
     };
 }
 

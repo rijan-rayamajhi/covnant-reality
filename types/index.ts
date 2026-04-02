@@ -49,6 +49,8 @@ export interface Property {
     allowChat?: boolean;
     landmark?: string | null;
     floorPlans: string[];
+    search_category_id?: string | null;
+    search_subtype_id?: string | null;
 }
 
 export type PropertyStatus = "Pending Approval" | "Approved" | "Rejected";
@@ -191,6 +193,8 @@ export interface SearchProperty {
     // Reviews
     rating?: number;
     reviewCount?: number;
+    search_category_id?: string | null;
+    search_subtype_id?: string | null;
 }
 
 export interface SearchFilters {
