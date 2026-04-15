@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { City, getStates, getCitiesByState, State } from "@/lib/api/locations";
 import { 
     DistrictIntegration, 
@@ -36,6 +36,24 @@ export default function DistrictIntegrationsPage() {
     // UI states
     const [searchQuery, setSearchQuery] = useState("");
     const [isMultiSelectOpen, setIsMultiSelectOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent | TouchEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsMultiSelectOpen(false);
+            }
+        }
+        
+        if (isMultiSelectOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+            document.addEventListener("touchstart", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("touchstart", handleClickOutside);
+        };
+    }, [isMultiSelectOpen]);
 
     useEffect(() => {
         loadInitialData();
@@ -270,7 +288,7 @@ export default function DistrictIntegrationsPage() {
                                 <span className="bg-slate-100 px-2 py-0.5 rounded-full text-xs text-slate-500 font-semibold">{connectedDistrictIds.length} Selected</span>
                             </label>
                             
-                            <div className="relative">
+                            <div className="relative" ref={dropdownRef}>
                                 {/* Custom Multi-select Dropdown trigger */}
                                 <div 
                                     className="w-full px-4 py-2.5 bg-slate-50 border border-border rounded-xl text-sm cursor-pointer flex flex-wrap gap-1.5 min-h-[44px] items-center"
@@ -293,23 +311,38 @@ export default function DistrictIntegrationsPage() {
                                 
                                 {/* Dropdown menu */}
                                 {isMultiSelectOpen && (
-                                    <div className="absolute z-10 w-full mt-2 bg-white border border-border rounded-xl shadow-xl max-h-[250px] overflow-y-auto custom-scrollbar p-2">
-                                        {cities.filter(c => c.id !== mainDistrictId).map(city => (
-                                            <div 
-                                                key={city.id} 
-                                                onClick={() => toggleConnectedDistrict(city.id)}
-                                                className="flex items-center gap-3 p-2 hover:bg-slate-50 cursor-pointer rounded-lg rounded-xl"
+                                    <div className="absolute z-10 w-full mt-2 bg-white border border-border rounded-xl shadow-xl overflow-hidden">
+                                        <div className="flex items-center justify-between p-2.5 border-b border-border bg-slate-50/50">
+                                            <span className="text-xs font-semibold text-text-secondary px-1">Select areas</span>
+                                            <button 
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setIsMultiSelectOpen(false);
+                                                }}
+                                                className="p-1 hover:bg-slate-200 rounded-md text-slate-400 hover:text-slate-600 transition-colors"
                                             >
-                                                <input 
-                                                    type="checkbox"
-                                                    checked={connectedDistrictIds.includes(city.id)}
-                                                    readOnly
-                                                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary h-[1.125rem] w-[1.125rem] cursor-pointer"
-                                                />
-                                                <span className="text-sm font-medium text-text-primary">{city.name}</span>
-                                            </div>
-                                        ))}
-                                        {cities.length <= 1 && <div className="p-3 text-sm text-text-muted text-center">Not enough cities available in this state.</div>}
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <div className="max-h-[220px] overflow-y-auto custom-scrollbar p-2">
+                                            {cities.filter(c => c.id !== mainDistrictId).map(city => (
+                                                <div 
+                                                    key={city.id} 
+                                                    onClick={() => toggleConnectedDistrict(city.id)}
+                                                    className="flex items-center gap-3 p-2 hover:bg-slate-50 cursor-pointer rounded-xl"
+                                                >
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={connectedDistrictIds.includes(city.id)}
+                                                        readOnly
+                                                        className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                                                    />
+                                                    <span className="text-sm font-medium text-text-primary">{city.name}</span>
+                                                </div>
+                                            ))}
+                                            {cities.length <= 1 && <div className="p-3 text-sm text-text-muted text-center">Not enough cities available in this state.</div>}
+                                        </div>
                                     </div>
                                 )}
                             </div>
