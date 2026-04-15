@@ -44,6 +44,7 @@ export function usePropertySearch(): UsePropertySearchReturn {
             : undefined,
         is_verified: searchParams.get("verified") === "true" ? true : undefined,
         agentId: searchParams.get("agent") || undefined,
+        include_connected: searchParams.get("include_connected") !== "false",
         sort_by: "newest",
     });
 

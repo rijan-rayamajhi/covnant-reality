@@ -59,6 +59,7 @@ export async function searchProperties(
         p_property_type: filters.property_type ?? null,
         p_is_verified: filters.is_verified ?? null,
         p_agent_id: filters.agentId ?? null,
+        p_include_connected: filters.include_connected ?? true,
         p_limit: limit,
         p_offset: offset,
     });

@@ -105,6 +105,35 @@ export function FilterContent({ filters, onFilterChange }: FilterContentProps) {
                     </label>
                 </div>
             </section>
+
+            <hr className="border-t border-border" />
+
+            {/* 5. Include Connected Districts toggle */}
+            <section>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="text-base font-semibold text-text-primary mb-1">
+                            Include Nearby Areas
+                        </h3>
+                        <p className="text-xs text-text-secondary">
+                            Include properties from connected districts
+                        </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={filters.include_connected !== false}
+                            onChange={(e) =>
+                                onFilterChange({
+                                    include_connected: e.target.checked,
+                                })
+                            }
+                        />
+                        <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                </div>
+            </section>
         </div>
     );
 }

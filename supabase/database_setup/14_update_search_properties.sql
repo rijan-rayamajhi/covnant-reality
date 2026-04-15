@@ -14,7 +14,8 @@ CREATE OR REPLACE FUNCTION search_properties(
   p_query text DEFAULT NULL,
   p_limit int DEFAULT 50,
   p_offset int DEFAULT 0,
-  p_agent_id uuid DEFAULT NULL
+  p_agent_id uuid DEFAULT NULL,
+  p_include_connected boolean DEFAULT true
 )
 RETURNS TABLE (
   id uuid,
@@ -58,7 +59,18 @@ BEGIN
     COUNT(*) OVER() as total_count
   FROM properties p
   WHERE p.status = 'approved'
-    AND (p_city IS NULL OR p.city ILIKE '%' || p_city || '%')
+    AND (
+      p_city IS NULL 
+      OR p.city ILIKE '%' || p_city || '%'
+      OR (
+        p_include_connected = true AND p.city_id IN (
+          SELECT connected_district_id 
+          FROM district_integrations di 
+          JOIN cities c ON c.id = di.main_district_id 
+          WHERE c.name ILIKE '%' || p_city || '%'
+        )
+      )
+    )
     AND (p_min_price IS NULL OR p.price >= p_min_price)
     AND (p_max_price IS NULL OR p.price <= p_max_price)
     AND (p_bedrooms IS NULL OR p.bedrooms = p_bedrooms)

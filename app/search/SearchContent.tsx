@@ -346,12 +346,15 @@ export function SearchContent() {
 
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-    const displayLocation = filters.city
-        ? filters.city.charAt(0).toUpperCase() + filters.city.slice(1)
-        : 'All Locations';
-
-
-
+    const displayLocationParts = [
+        filters.city ? filters.city.charAt(0).toUpperCase() + filters.city.slice(1) : 'All Locations'
+    ];
+    
+    if (filters.city && filters.include_connected !== false) {
+        displayLocationParts.push(' + nearby areas');
+    }
+    
+    const displayLocation = displayLocationParts.join('');
     return (
         <div className="min-h-screen bg-bg relative">
             {/* Sticky Top Bar */}

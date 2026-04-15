@@ -208,6 +208,7 @@ export interface SearchFilters {
     is_verified?: boolean;
     sort_by?: "newest" | "price_low" | "price_high";
     agentId?: string;
+    include_connected?: boolean;
 }
 
 // ─── Review Types ───────────────────────────────────────────────────────────

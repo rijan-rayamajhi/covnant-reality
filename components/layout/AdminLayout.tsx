@@ -20,7 +20,8 @@ import {
     MapPin,
     User,
     FileKey,
-    Settings2
+    Settings2,
+    Link as LinkIcon
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -33,6 +34,7 @@ const navItems = [
     { label: "Property Moderation", href: "/admin/properties", icon: Building2 },
     { label: "Floor Plan Requests", href: "/admin/floor-plan-requests", icon: FileKey },
     { label: "Location Management", href: "/admin/locations", icon: MapPin },
+    { label: "District Integrations", href: "/admin/district-integrations", icon: LinkIcon },
     { label: "Search Categories", href: "/admin/categories", icon: Settings2 },
     { label: "Lead Monitoring", href: "/admin/leads", icon: Target },
     { label: "Site Visits", href: "/admin/visits", icon: CalendarDays },
