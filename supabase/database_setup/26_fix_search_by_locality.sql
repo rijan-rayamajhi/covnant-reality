@@ -1,4 +1,21 @@
--- Update search_properties to accept p_agent_id, p_city_id, p_state_id, p_locality_id, p_include_connected
+-- ==========================================
+-- 26_FIX_SEARCH_BY_LOCALITY.SQL
+-- Fix: Properties not showing when searching by locality
+-- 
+-- ROOT CAUSE: Migration 14 overwrote the search_properties function
+-- from migration 05, dropping p_city_id, p_state_id, p_locality_id
+-- parameters. The client sends these when a user picks a locality 
+-- from the search autocomplete, but the DB function didn't filter 
+-- on them — returning 0 results.
+--
+-- This migration re-creates the function with ALL parameters merged.
+-- ==========================================
+
+-- Drop ALL existing overloaded versions to avoid conflicts.
+-- Version from 05_functions.sql:
+DROP FUNCTION IF EXISTS search_properties(text, uuid, uuid, uuid, numeric, numeric, int, text, boolean, text, numeric, numeric, text, text, uuid, int, int);
+-- Version from 14_update_search_properties.sql:
+DROP FUNCTION IF EXISTS search_properties(text, numeric, numeric, int, text, boolean, text, numeric, numeric, text, text, int, int, uuid, boolean);
 
 CREATE OR REPLACE FUNCTION search_properties(
   p_city text DEFAULT NULL,

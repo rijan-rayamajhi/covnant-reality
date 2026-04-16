@@ -50,8 +50,11 @@ export async function searchProperties(
     const supabase = createClient();
 
     const { data, error } = await supabase.rpc("search_properties", {
-        p_city: filters.city ?? null,
-        p_city_id: filters.cityId ?? null,
+        // When filtering by localityId, don't also filter by city text
+        // because `filters.city` contains the locality display name (not the actual city),
+        // which would conflict with the city column and return 0 results.
+        p_city: filters.localityId ? null : (filters.city ?? null),
+        p_city_id: filters.localityId ? null : (filters.cityId ?? null),
         p_state_id: filters.stateId ?? null,
         p_locality_id: filters.localityId ?? null,
         p_bedrooms: filters.bedrooms ?? null,
